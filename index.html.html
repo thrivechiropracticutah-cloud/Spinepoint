@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SpinePoint Chiro — Practice Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --oak:#62684c;--garden:#4e513b;--sage:#acad96;--linen:#dfd3c3;--ginger:#d0b59e;--rook:#935b38;--honey:#d2985a;
+  --bg:#f5f0e8;--surface:#fffdf9;--card:#ffffff;
+  --text-primary:#2c2a24;--text-secondary:#6b6456;--text-hint:#9c9181;
+  --border:#dfd3c3;--border-strong:#c9b99e;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh}
+.app{display:flex;min-height:100vh}
+.sidebar{width:214px;background:var(--garden);padding:24px 0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:10}
+.logo{padding:0 18px 20px;border-bottom:0.5px solid rgba(255,255,255,.12)}
+.logo-name{font-size:14px;font-weight:500;color:#fff}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.38);margin-top:2px}
+.nav{padding:12px 0;flex:1}
+.nav-section{font-size:10px;color:rgba(255,255,255,.28);padding:12px 18px 4px;letter-spacing:.8px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 18px;font-size:13px;color:rgba(255,255,255,.52);cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:rgba(255,255,255,.88);background:rgba(255,255,255,.06)}
+.nav-item.active{color:#fff;border-left-color:var(--honey);background:rgba(210,152,90,.12)}
+.nav-item i{font-size:16px;flex-shrink:0}
+.alert-dot{width:6px;height:6px;border-radius:50%;background:var(--honey);margin-left:auto}
+.main{margin-left:214px;flex:1;padding:28px}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:3px}
+.page-sub{font-size:13px;color:var(--text-secondary);margin-bottom:22px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.metric{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px}
+.metric-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.metric-val{font-size:24px;font-weight:500;color:var(--text-primary);line-height:1}
+.metric-delta{font-size:11px;margin-top:4px;color:#5a7a3a}
+.metric-delta.down{color:#a0402a}
+.metric-sub{font-size:11px;color:var(--text-hint);margin-top:3px}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:500;color:var(--text-primary)}
+.badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.b-oak{background:#e8ece0;color:#3a3f28}
+.b-honey{background:#f5e6cc;color:#6b3f0e}
+.b-sage{background:#eaebe3;color:#4a4c35}
+.b-ginger{background:#f5e8dc;color:#6b3a1e}
+.b-red{background:#f5ddd8;color:#7a2e1e}
+.b-gray{background:#f0ece6;color:#5a4a38}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.queue-list{display:flex;flex-direction:column;gap:7px}
+.queue-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border:0.5px solid var(--border);border-radius:9px;background:var(--surface)}
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.q-info{flex:1;min-width:0}
+.q-name{font-size:13px;font-weight:500;color:var(--text-primary)}
+.q-detail{font-size:11px;color:var(--text-secondary);margin-top:1px}
+.q-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary);white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-wait{background:var(--honey)}.dot-ready{background:var(--oak)}.dot-in{background:var(--rook)}
+.jane-note{background:#f5f0e4;border:0.5px solid var(--ginger);border-radius:8px;padding:11px 13px;font-size:12px;color:var(--rook);margin-bottom:18px;display:flex;gap:7px;align-items:flex-start}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999}
+.toast{background:var(--garden);color:#fff;padding:12px 16px;border-radius:9px;font-size:13px;display:none;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.toast.show{display:flex}
+.primary-btn{background:var(--oak);color:#fff;border:none;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.primary-btn:hover{background:var(--garden)}
+.sm-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border-strong);background:var(--card);color:var(--text-primary);cursor:pointer}
+.sm-btn:hover{background:var(--linen)}
+.sm-btn.primary{background:var(--oak);color:#fff;border-color:var(--oak)}
+.sm-btn.primary:hover{background:var(--garden)}
+.tier-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tier-card{border:0.5px solid var(--border);border-radius:10px;padding:14px 15px;background:var(--card);position:relative;overflow:visible}
+.tier-card:hover{border-color:var(--border-strong)}
+.tier-name{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.tier-count{font-size:26px;font-weight:500;line-height:1;color:var(--text-primary)}
+.tier-mrr{font-size:12px;color:var(--text-secondary);margin-top:3px}
+.tier-bar-bg{height:3px;background:var(--linen);border-radius:2px;margin-top:10px}
+.tier-bar-fill{height:100%;border-radius:2px}
+.menu-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--text-hint);padding:3px 5px;border-radius:5px;font-size:15px;line-height:1}
+.menu-btn:hover{background:var(--linen);color:var(--text-primary)}
+.dropdown{position:absolute;top:32px;right:0;background:var(--card);border:0.5px solid var(--border-strong);border-radius:8px;padding:4px 0;min-width:160px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.dropdown.open{display:block}
+.dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;color:var(--text-primary);cursor:pointer}
+.dropdown-item:hover{background:var(--linen)}
+.dropdown-item.danger{color:#a0402a}
+.dropdown-item.danger:hover{background:#f5ddd8}
+.dropdown-divider{height:0.5px;background:var(--border);margin:4px 0}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(46,42,30,.45);z-index:100;justify-content:center;align-items:flex-start;padding-top:60px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--card);border:0.5px solid var(--border-strong);border-radius:14px;padding:24px;width:420px;max-width:96%;box-shadow:0 8px 32px rgba(0,0,0,.14);max-height:82vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:18px}
+.field-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:block;font-weight:500}
+.field-input{width:100%;border:0.5px solid var(--border-strong);border-radius:7px;padding:8px 10px;font-size:13px;background:var(--surface);color:var(--text-primary);margin-bottom:13px;font-family:inherit}
+.field-input:focus{outline:none;border-color:var(--oak)}
+.modal-actions{display:flex;gap:8px;margin-top:6px}
+.btn-save{background:var(--oak);color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;flex:1}
+.btn-save:hover{background:var(--garden)}
+.btn-cancel{background:none;border:0.5px solid var(--border-strong);padding:9px 18px;border-radius:7px;font-size:13px;color:var(--text-primary);cursor:pointer;flex:1}
+.btn-cancel:hover{background:var(--linen)}
+.empty-state{text-align:center;padding:32px 20px;color:var(--text-hint);font-size:13px}
+.empty-state i{font-size:28px;display:block;margin-bottom:8px;color:var(--sage)}
+.kiosk-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.qr-panel{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.qr-frame{border:2px solid var(--garden);border-radius:10px;padding:12px;background:#fff;display:inline-block;margin-bottom:14px}
+.url-pill{font-size:11px;color:var(--text-hint);background:var(--linen);border-radius:6px;padding:4px 10px;font-family:monospace;margin-top:8px}
+.print-btn{background:var(--oak);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;margin-top:14px}
+.print-btn:hover{background:var(--garden)}
+.conv-ring-wrap{position:relative;width:52px;height:52px;flex-shrink:0}
+.conv-ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:500;color:var(--text-primary)}
+.sms-select{width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border-strong);border-radius:7px;background:var(--surface);color:var(--text-primary)}
+.sms-textarea{width:100%;border:0.5px solid var(--border-strong);border-radius:7px;padding:9px 11px;font-size:13px;resize:vertical;min-height:90px;font-family:inherit;color:var(--text-primary);background:var(--surface)}
+.sms-textarea:focus,.sms-select:focus,.field-input:focus{outline:none;border-color:var(--oak)}
+
+/* ── Subscription group cards ── */
+.sub-group{border:0.5px solid var(--border);border-radius:10px;background:var(--card);overflow:hidden;margin-bottom:10px}
+.sub-group-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface);border-bottom:0.5px solid var(--border)}
+.sub-group-left{display:flex;align-items:center;gap:10px}
+.sub-group-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0}
+.sub-group-name{font-size:14px;font-weight:500;color:var(--text-primary)}
+.sub-group-plan{font-size:12px;color:var(--text-secondary);margin-top:1px}
+.sub-group-fee{font-size:14px;font-weight:500;color:var(--text-primary);text-align:right}
+.sub-group-fee-label{font-size:11px;color:var(--text-hint);margin-top:1px;text-align:right}
+.sub-group-body{padding:12px 16px}
+.sub-group-section{margin-bottom:10px}
+.sub-group-section:last-child{margin-bottom:0}
+.sub-section-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--text-hint);margin-bottom:6px}
+.member-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:var(--linen);color:var(--text-secondary);margin:0 4px 4px 0}
+.member-pill.primary{background:#e8ece0;color:#3a3f28;font-weight:500}
+.del-group-btn{background:none;border:none;cursor:pointer;color:var(--text-hint);padding:4px 6px;border-radius:5px;font-size:14px}
+.del-group-btn:hover{color:#a0402a;background:#f5ddd8}
+.member-input-row{display:flex;gap:6px;margin-bottom:6px}
+.member-input-row input{flex:1;border:0.5px solid var(--border-strong);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--surface);color:var(--text-primary);font-family:inherit}
+.member-input-row input:focus{outline:none;border-color:var(--oak)}
+.add-member-btn{background:none;border:0.5px dashed var(--border-strong);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap}
+.add-member-btn:hover{background:var(--linen);color:var(--text-primary)}
+.m-tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 16px;font-size:13px;color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-0.5px;white-space:nowrap}
+.m-tab:hover{color:var(--text-primary);background:var(--linen)}
+.m-tab.active{color:var(--oak);border-bottom-color:var(--oak);font-weight:500}
+.m-tab-count{font-size:11px;padding:1px 6px;border-radius:10px;background:var(--linen);color:var(--text-secondary);font-weight:400}
+.m-tab.active .m-tab-count{background:#e8ece0;color:#3a3f28}
+.m-tab-view{margin-top:0}
+.staging-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border:0.5px solid var(--border);border-radius:9px;background:var(--surface);margin-bottom:7px}
+.staging-row-info{flex:1;min-width:0}
+.staging-row-name{font-size:13px;font-weight:500;color:var(--text-primary)}
+.staging-row-detail{font-size:11px;color:var(--text-secondary);margin-top:1px}
+.staging-actions{display:flex;gap:6px;flex-shrink:0}
+.stage-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border-strong);background:var(--card);color:var(--text-primary);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.stage-btn:hover{background:var(--linen)}
+.stage-btn.active-btn{background:#e8ece0;color:#3a3f28;border-color:#c4c9b0}
+.stage-btn.active-btn:hover{background:#d8dcc8}
+.stage-btn.pass-btn{background:#f5e6cc;color:#6b3f0e;border-color:#e0c898}
+.stage-btn.pass-btn:hover{background:#eed8a8}
+.stage-btn.inactive-btn{background:#f5ddd8;color:#7a2e1e;border-color:#ddb0a0}
+.stage-btn.inactive-btn:hover{background:#ecc8c0}
+padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margin-bottom:-0.5px}
+.sync-tab:hover{color:var(--text-primary)}
+.sync-tab.active{color:var(--oak);border-bottom-color:var(--oak);font-weight:500}
+.sync-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;margin-bottom:5px;font-size:13px}
+.sync-row.new{background:#edf0e5}
+.sync-row.update{background:#f5f0e8}
+.sync-row.inactive{background:#f5ddd8}
+.sync-row.skip{background:var(--surface)}
+.sync-row-name{font-weight:500;flex:1;color:var(--text-primary)}
+.sync-row-detail{font-size:12px;color:var(--text-secondary)}
+.sync-pill{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
+.pill-new{background:#e8ece0;color:#3a3f28}
+.pill-update{background:#f5e6cc;color:#6b3f0e}
+.pill-inactive{background:#f5ddd8;color:#7a2e1e}
+.pill-skip{background:#f0ece6;color:#5a4a38}
+#dropZone.dragover{background:var(--linen);border-color:var(--oak)}
+
+.inline-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-name" id="sidebar-practice-name">Your Practice</div>
+      <div class="logo-sub">Practice dashboard</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" onclick="nav('alerts',this)"><i class="ti ti-bell"></i> Alerts</div>
+      <div class="nav-section">Patients</div>
+      <div class="nav-item" onclick="nav('memberships',this)"><i class="ti ti-id-badge"></i> Memberships</div>
+      <div class="nav-item" onclick="nav('checkin',this)"><i class="ti ti-scan"></i> Check-in kiosk</div>
+      <div class="nav-section">Communications</div>
+      <div class="nav-item" onclick="nav('sms',this)"><i class="ti ti-message-2"></i> Mass SMS</div>
+      <div class="nav-section">Admin</div>
+      <div class="nav-item" onclick="nav('janesync',this)"><i class="ti ti-file-import"></i> Jane sync</div>
+      <div class="nav-item" onclick="nav('settings',this)"><i class="ti ti-settings"></i> Settings</div>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title" id="dash-title">Practice overview</div>
+      <div class="page-sub" id="dash-sub">—</div>
+      <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Connect your Jane API key in Settings to pull live data. Data you enter here is saved to your browser.</span></div>
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-users" style="font-size:13px"></i> Active subscriptions</div>
+          <div class="metric-val" id="d-subs">0</div>
+          <div class="metric-sub" id="d-pts-sub">covers 0 patients</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-chart-pie" style="font-size:13px"></i> NP conversion rate</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-top:2px">
+            <div class="conv-ring-wrap">
+              <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#dfd3c3" stroke-width="5"/><circle id="conv-arc" cx="26" cy="26" r="20" fill="none" stroke="#62684c" stroke-width="5" stroke-dasharray="125.7" stroke-dashoffset="125.7" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg>
+              <div class="conv-ring-label" id="conv-pct-label">0%</div>
+            </div>
+            <div><div class="metric-val" style="font-size:22px" id="d-conv">0%</div><div class="metric-sub" id="d-conv-sub">no data yet</div></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-ticket" style="font-size:13px"></i> Punch pass holders</div>
+          <div class="metric-val" id="d-pass">0</div>
+          <div class="metric-sub">tracked separately</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-currency-dollar" style="font-size:13px"></i> Monthly revenue</div>
+          <div class="metric-val" id="d-mrr">$0</div>
+          <div class="metric-sub">active subscriptions</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Subscriptions by plan</div><span class="badge b-oak">Live</span></div>
+          <div style="position:relative;width:100%;height:200px"><canvas id="planPieChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">MRR by plan</div><span class="badge b-ginger">Live</span></div>
+          <div style="position:relative;width:100%;height:200px"><canvas id="planMrrChart"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Today's check-in queue</div><span class="badge b-honey" id="d-queue-badge">0 waiting</span></div>
+        <div id="dashQueue"><div class="empty-state"><i class="ti ti-calendar"></i>No check-ins yet today</div></div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="page" id="page-alerts">
+      <div class="page-title">Alerts &amp; reminders</div>
+      <div class="page-sub">Automated flags that need your attention</div>
+      <div id="alertsContent">
+        <div class="empty-state" style="padding:48px 20px">
+          <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
+          No alerts right now — you're all caught up!
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBERSHIPS -->
+    <div class="page" id="page-memberships">
+      <div class="page-title">Memberships</div>
+      <div class="page-sub">Plans, subscriptions, and patient groups</div>
+
+      <!-- SUMMARY METRICS -->
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px">
+        <div class="metric"><div class="metric-label">Active subscriptions</div><div class="metric-val" id="m-subs">0</div><div class="metric-sub">billing units paying monthly</div></div>
+        <div class="metric"><div class="metric-label">Total active patients</div><div class="metric-val" id="m-pts">0</div><div class="metric-sub">individuals covered</div></div>
+        <div class="metric"><div class="metric-label">Punch pass holders</div><div class="metric-val" id="m-pass">0</div><div class="metric-sub">tracked separately · receive SMS</div></div>
+        <div class="metric"><div class="metric-label">Total monthly revenue</div><div class="metric-val" id="m-mrr">$0</div><div class="metric-sub">subscriptions only</div></div>
+      </div>
+
+      <!-- MEMBERSHIP TABS -->
+      <div class="card" style="padding-bottom:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+          <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);width:100%;align-items:flex-end">
+            <button class="m-tab active" id="mtab-patients" onclick="showMTab('patients',this)">
+              <i class="ti ti-users" style="font-size:14px"></i> Patients <span class="m-tab-count" id="mtab-count-patients">0</span>
+            </button>
+            <button class="m-tab" id="mtab-active" onclick="showMTab('active',this)">
+              <i class="ti ti-id-badge" style="font-size:14px"></i> Active <span class="m-tab-count" id="mtab-count-active">0</span>
+            </button>
+            <button class="m-tab" id="mtab-punch" onclick="showMTab('punch',this)">
+              <i class="ti ti-ticket" style="font-size:14px"></i> Punch passes <span class="m-tab-count" id="mtab-count-punch">0</span>
+            </button>
+            <button class="m-tab" id="mtab-plans" onclick="showMTab('plans',this)">
+              <i class="ti ti-layout-grid" style="font-size:14px"></i> Plans <span class="m-tab-count" id="mtab-count-plans">0</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: PATIENTS (imported, unsorted) -->
+      <div id="mview-patients" class="m-tab-view">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Imported patients</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Review each patient and move them to Active, Punch pass, or mark Inactive</div>
+            </div>
+          </div>
+          <div id="patientStagingList"><div class="empty-state"><i class="ti ti-file-import"></i>No patients yet — use Jane sync to import</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: ACTIVE SUBSCRIPTIONS -->
+      <div id="mview-active" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Active subscriptions</div>
+            <button class="primary-btn" style="padding:6px 12px;font-size:12px;gap:5px" onclick="openSubModal()"><i class="ti ti-plus"></i> Add subscription</button>
+          </div>
+          <div id="subGroupList"><div class="empty-state"><i class="ti ti-users"></i>No active subscriptions yet</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: PUNCH PASSES -->
+      <div id="mview-punch" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Punch pass holders</div>
+            <button class="primary-btn" style="padding:6px 12px;font-size:12px;gap:5px" onclick="openPassModal()"><i class="ti ti-plus"></i> Add pass</button>
+          </div>
+          <div id="passHolderList"><div class="empty-state"><i class="ti ti-ticket"></i>No punch pass holders yet</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: PLANS -->
+      <div id="mview-plans" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Subscription plan breakdown</div>
+            <button class="primary-btn" style="padding:6px 12px;font-size:12px;gap:5px" onclick="openPlanModal()"><i class="ti ti-plus"></i> Add plan</button>
+          </div>
+          <div class="tier-grid" id="tierCards">
+            <div class="empty-state" style="grid-column:1/-1;padding:24px"><i class="ti ti-id-badge"></i>No plans yet — add your first plan above</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CHECK-IN -->
+    <div class="page" id="page-checkin">
+      <div class="page-title">Check-in kiosk</div>
+      <div class="page-sub">Print the QR code for your desk — patients scan to join the queue</div>
+      <div class="kiosk-grid">
+        <div class="qr-panel">
+          <div style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px" id="qr-practice-name">Your Practice</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:20px">Scan to check in for your appointment</div>
+          <div class="qr-frame" id="qrCodeContainer"></div>
+          <div class="url-pill" id="qr-url-pill">Set your URL in Settings</div>
+          <div style="font-size:11px;color:var(--text-hint);margin-top:8px">No app needed · works on any phone</div>
+          <button class="print-btn" onclick="printQR()"><i class="ti ti-printer"></i> Print QR code</button>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><div class="card-title">Live waiting queue</div><span class="badge b-honey" id="queueBadge">0 waiting</span></div>
+          <div class="queue-list" id="kioskQueue"><div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div></div>
+          <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px">
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Manual check-in</div>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="kioskName" placeholder="Patient full name" class="field-input" style="margin-bottom:0;flex:1"/>
+              <button class="primary-btn" style="padding:8px 14px;white-space:nowrap" onclick="kioskCheckIn()"><i class="ti ti-check"></i> Check in</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMS -->
+    <div class="page" id="page-sms">
+      <div class="page-title">Mass SMS</div>
+      <div class="page-sub">Clinic-wide messages from your Twilio number</div>
+      <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Requires a Twilio account. Add your credentials in Settings. All automated alerts send from this same number.</span></div>
+      <div class="two-col">
+        <div class="card">
+          <div style="margin-bottom:13px"><label class="field-label">Send to</label><select id="smsTier" onchange="updateSmsCount()" class="sms-select"></select></div>
+          <div style="margin-bottom:13px"><label class="field-label">Template</label>
+            <select onchange="fillTemplate(this.value)" class="sms-select">
+              <option value="">— choose a template —</option>
+              <option value="closure">Clinic closure</option>
+              <option value="holiday">Holiday hours</option>
+              <option value="reminder">Appointment reminder</option>
+              <option value="pass_low">Punch pass running low</option>
+              <option value="custom">Custom message</option>
+            </select>
+          </div>
+          <div style="margin-bottom:13px"><label class="field-label">Message <span id="charCount" style="font-weight:400">(0/160)</span></label><textarea id="smsBody" placeholder="Type your message…" oninput="updateChar(this)" class="sms-textarea"></textarea></div>
+          <div style="font-size:12px;color:var(--oak);font-weight:500;margin-bottom:10px" id="recipientLine">—</div>
+          <button class="primary-btn" onclick="sendSMS()"><i class="ti ti-send"></i> Send SMS</button>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Message preview</div>
+          <div style="background:var(--linen);border-radius:14px;padding:18px;min-height:110px">
+            <div style="background:#dfd3c3;border-radius:14px 14px 3px 14px;padding:9px 12px;font-size:13px;color:#2c2a24;max-width:85%;margin-left:auto" id="previewBubble">Your message will appear here.</div>
+          </div>
+          <div style="margin-top:16px"><div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px">Send history</div><div id="sendHistory"><div class="empty-state" style="padding:14px"><i class="ti ti-message-off"></i>No messages sent yet</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JANE SYNC -->
+    <div class="page" id="page-janesync">
+      <div class="page-title">Jane sync</div>
+      <div class="page-sub">Drop your Jane Patient List CSV to update SpinePoint — takes under 2 minutes</div>
+
+      <div class="jane-note"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>In Jane: <strong>Reports → List → Active patients → ⋯ → Export to Excel</strong>. Open in Google Sheets, File → Download → CSV. Then drop it below.</span></div>
+
+      <!-- DROP ZONE -->
+      <div class="card" id="dropZoneCard">
+        <div id="dropZone" style="border:1.5px dashed var(--border-strong);border-radius:10px;padding:40px 20px;text-align:center;cursor:pointer;transition:.15s" ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)" onclick="document.getElementById('csvFileInput').click()">
+          <i class="ti ti-upload" style="font-size:32px;color:var(--sage);display:block;margin-bottom:10px"></i>
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px">Drop your Jane CSV here</div>
+          <div style="font-size:12px;color:var(--text-secondary)">or click to browse — accepts .csv files only</div>
+          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleFileSelect(this)"/>
+        </div>
+      </div>
+
+      <!-- PREVIEW / RESULTS (hidden until file loaded) -->
+      <div id="syncPreview" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title" id="syncPreviewTitle">Preview</div>
+            <div style="display:flex;gap:8px">
+              <button class="sm-btn" onclick="resetSync()"><i class="ti ti-x" style="font-size:12px"></i> Clear</button>
+              <button class="primary-btn" style="padding:7px 16px;font-size:13px" id="confirmSyncBtn" onclick="confirmSync()"><i class="ti ti-check"></i> Confirm sync</button>
+            </div>
+          </div>
+
+          <!-- SUMMARY PILLS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="syncSummaryPills"></div>
+
+          <!-- TABS -->
+          <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);margin-bottom:14px">
+            <button class="sync-tab active" id="tab-new" onclick="showSyncTab('new',this)">New patients</button>
+            <button class="sync-tab" id="tab-update" onclick="showSyncTab('update',this)">Updates</button>
+            <button class="sync-tab" id="tab-inactive" onclick="showSyncTab('inactive',this)">Inactive in Jane</button>
+            <button class="sync-tab" id="tab-skip" onclick="showSyncTab('skip',this)">No change</button>
+          </div>
+
+          <div id="sync-tab-new" class="sync-tab-content"></div>
+          <div id="sync-tab-update" class="sync-tab-content" style="display:none"></div>
+          <div id="sync-tab-inactive" class="sync-tab-content" style="display:none"></div>
+          <div id="sync-tab-skip" class="sync-tab-content" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- SYNC HISTORY -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Sync history</div></div>
+        <div id="syncHistory"><div class="empty-state" style="padding:16px"><i class="ti ti-history"></i>No syncs yet</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Practice info, integrations, and preferences</div>
+      <div class="card">
+        <div class="settings-title">Practice information</div>
+        <div class="inline-row">
+          <div><label class="field-label">Practice name</label><input type="text" class="field-input" id="set-name" placeholder="e.g. SpinePoint Chiropractic" oninput="saveSetting('practiceName',this.value);updateLabels()"/></div>
+          <div><label class="field-label">Phone number</label><input type="text" class="field-input" id="set-phone" placeholder="(801) 555-1234" oninput="saveSetting('phone',this.value)"/></div>
+        </div>
+        <div class="inline-row">
+          <div><label class="field-label">Check-in page URL</label><input type="text" class="field-input" id="set-url" placeholder="yourpractice.com/checkin" oninput="saveSetting('checkinUrl',this.value);refreshQR()"/></div>
+          <div><label class="field-label">Current month label</label><input type="text" class="field-input" id="set-month" placeholder="e.g. June 2026" oninput="saveSetting('monthLabel',this.value);updateLabels()"/></div>
+        </div>
+        <div><label class="field-label">Overage visit price ($)</label><input type="number" class="field-input" id="set-overage" placeholder="25" style="max-width:160px" oninput="saveSetting('overagePrice',this.value)"/></div>
+        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
+      </div>
+      <div class="card">
+        <div class="settings-title">Twilio SMS</div>
+        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Sign up at twilio.com · ~$1/mo for a number · ~$0.0075 per text</span></div>
+        <div class="inline-row">
+          <div><label class="field-label">Account SID</label><input type="text" class="field-input" id="set-sid" placeholder="ACxxxxxxxxxxxxxxxx" oninput="saveSetting('twilioSid',this.value)"/></div>
+          <div><label class="field-label">Auth Token</label><input type="password" class="field-input" id="set-token" placeholder="••••••••••••" oninput="saveSetting('twilioToken',this.value)"/></div>
+        </div>
+        <div><label class="field-label">Twilio phone number</label><input type="text" class="field-input" id="set-twilio-phone" placeholder="+18015551234" style="max-width:220px" oninput="saveSetting('twilioPhone',this.value)"/></div>
+      </div>
+      <div class="card">
+        <div class="settings-title">Jane API</div>
+        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Contact Jane support to request API access. Once approved, paste your key below.</span></div>
+        <div class="inline-row">
+          <div><label class="field-label">Jane subdomain</label><input type="text" class="field-input" id="set-jane-sub" placeholder="yourpractice" oninput="saveSetting('janeSubdomain',this.value)"/></div>
+          <div><label class="field-label">API key</label><input type="password" class="field-input" id="set-jane-key" placeholder="••••••••••••" oninput="saveSetting('janeKey',this.value)"/></div>
+        </div>
+        <button class="sm-btn primary" onclick="showToast('Jane connection saved')"><i class="ti ti-plug" style="font-size:13px"></i> Save &amp; test connection</button>
+      </div>
+    </div>
+
+    <!-- PLAN MODAL -->
+    <div class="modal-overlay" id="planModal" onclick="handleOverlay(event,'planModal')">
+      <div class="modal-box">
+        <div class="modal-title" id="planModalTitle">Add plan</div>
+        <input type="hidden" id="pm-id"/>
+        <label class="field-label">Plan name</label><input type="text" class="field-input" id="pm-name" placeholder="e.g. Individual, Couple, Family, Flex"/>
+        <label class="field-label">Price per month ($)</label><input type="number" class="field-input" id="pm-price" min="0" placeholder="99"/>
+        <label class="field-label">Max members per subscription</label>
+        <select class="field-input" id="pm-maxmembers">
+          <option value="1">1 (Individual)</option>
+          <option value="2">2 (Couple)</option>
+          <option value="5">Up to 5 (Family)</option>
+          <option value="1" selected>1 (Flex / single visit)</option>
+        </select>
+        <div class="modal-actions"><button class="btn-cancel" onclick="closePlanModal()">Cancel</button><button class="btn-save" onclick="savePlan()">Save plan</button></div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTION MODAL -->
+    <div class="modal-overlay" id="subModal" onclick="handleOverlay(event,'subModal')">
+      <div class="modal-box">
+        <div class="modal-title" id="subModalTitle">Add subscription</div>
+        <input type="hidden" id="sm-id"/>
+        <label class="field-label">Account / family name</label><input type="text" class="field-input" id="sm-name" placeholder="e.g. Smith Family, John Smith"/>
+        <label class="field-label">Plan</label><select class="field-input" id="sm-plan"></select>
+        <label class="field-label">Monthly fee ($) <span style="color:var(--text-hint);font-weight:400">— auto-fills from plan, edit if different (e.g. 6+ family member)</span></label>
+        <input type="number" class="field-input" id="sm-fee" min="0" placeholder="0"/>
+        <label class="field-label">Primary / account holder name</label><input type="text" class="field-input" id="sm-primary" placeholder="e.g. John Smith"/>
+        <label class="field-label">Primary phone</label><input type="text" class="field-input" id="sm-phone" placeholder="(801) 555-1234"/>
+        <label class="field-label">Additional members <span style="color:var(--text-hint);font-weight:400">— one per line</span></label>
+        <textarea class="field-input" id="sm-members" placeholder="Sarah Smith&#10;Tommy Smith&#10;Emily Smith" rows="4"></textarea>
+        <label class="field-label">Member since</label><input type="date" class="field-input" id="sm-since"/>
+        <div class="modal-actions"><button class="btn-cancel" onclick="closeSubModal()">Cancel</button><button class="btn-save" onclick="saveSub()">Save subscription</button></div>
+      </div>
+    </div>
+
+    <!-- PASS MODAL -->
+    <div class="modal-overlay" id="passModal" onclick="handleOverlay(event,'passModal')">
+      <div class="modal-box">
+        <div class="modal-title" id="passModalTitle">Add punch pass</div>
+        <input type="hidden" id="pass-id"/>
+        <label class="field-label">Account / pass name</label><input type="text" class="field-input" id="pass-name" placeholder="e.g. Jane Doe or Smith Couple"/>
+        <label class="field-label">Primary holder</label><input type="text" class="field-input" id="pass-primary" placeholder="e.g. Jane Doe"/>
+        <label class="field-label">Phone</label><input type="text" class="field-input" id="pass-phone" placeholder="(801) 555-1234"/>
+        <label class="field-label">Additional members <span style="color:var(--text-hint);font-weight:400">— one per line (optional, e.g. for a couple pass)</span></label>
+        <textarea class="field-input" id="pass-members" placeholder="e.g. John Doe" rows="3"></textarea>
+        <label class="field-label">Visits remaining</label><input type="number" class="field-input" id="pass-visits" min="0" max="12" placeholder="12"/>
+        <label class="field-label">Purchase date</label><input type="date" class="field-input" id="pass-date"/>
+        <div class="modal-actions"><button class="btn-cancel" onclick="closePassModal()">Cancel</button><button class="btn-save" onclick="savePass()">Save pass</button></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"><i class="ti ti-circle-check" style="color:var(--honey)"></i><span id="toastMsg"></span></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script>
+const PCOLS=['#62684c','#d2985a','#935b38','#acad96','#d0b59e','#4e513b','#7a8c5e','#c4894a'];
+const PBGS=['#e8ece0','#f5e6cc','#f0e0d4','#eaebe3','#f5e8dc','#d8dbd0','#edf0e5','#faebd7'];
+const PTXT=['#3a3f28','#6b3f0e','#5a2e12','#3a3c28','#5a3a20','#2c2e1c','#3a4a28','#5a3a10'];
+
+let plans=JSON.parse(localStorage.getItem('sp_plans')||'[]');
+let subs=JSON.parse(localStorage.getItem('sp_subs')||'[]');
+let passes=JSON.parse(localStorage.getItem('sp_passes')||'[]');
+let queue=JSON.parse(localStorage.getItem('sp_queue')||'[]');
+let settings=JSON.parse(localStorage.getItem('sp_settings')||'{}');
+let nextPlanId=parseInt(localStorage.getItem('sp_npid')||'1');
+let nextSubId=parseInt(localStorage.getItem('sp_nsid')||'1');
+let nextPassId=parseInt(localStorage.getItem('sp_npassid')||'1');
+let sendHistory=[];
+let pieChart=null,mrrChart=null;
+
+function persist(){
+  localStorage.setItem('sp_plans',JSON.stringify(plans));
+  localStorage.setItem('sp_subs',JSON.stringify(subs));
+  localStorage.setItem('sp_passes',JSON.stringify(passes));
+  localStorage.setItem('sp_queue',JSON.stringify(queue));
+  localStorage.setItem('sp_settings',JSON.stringify(settings));
+  localStorage.setItem('sp_npid',nextPlanId);
+  localStorage.setItem('sp_nsid',nextSubId);
+  localStorage.setItem('sp_npassid',nextPassId);
+}
+function saveSetting(k,v){settings[k]=v;persist();}
+
+function nav(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  closeAllMenus();
+  if(id==='memberships')renderMemberships();
+  if(id==='checkin'){renderKioskQueue();refreshQR();}
+  if(id==='janesync')renderSyncHistory();
+  if(id==='sms')buildSmsAudience();
+  if(id==='dashboard')renderDashboard();
+}
+
+function updateLabels(){
+  const n=settings.practiceName||'Your Practice';
+  const m=settings.monthLabel||'—';
+  document.getElementById('sidebar-practice-name').textContent=n;
+  document.getElementById('dash-title').textContent=n+' — overview';
+  document.getElementById('dash-sub').textContent=m+' · cash-based membership practice';
+  document.getElementById('qr-practice-name').textContent=n;
+}
+
+function loadSettings(){
+  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-month':'monthLabel','set-overage':'overagePrice','set-sid':'twilioSid','set-token':'twilioToken','set-twilio-phone':'twilioPhone','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
+  Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el&&settings[k]!==undefined)el.value=settings[k];});
+}
+
+// ── QR ──────────────────────────────────────────────────────────────
+function refreshQR(){
+  const url=settings.checkinUrl||'https://yourpractice.com/checkin';
+  const pill=document.getElementById('qr-url-pill');
+  if(pill)pill.textContent=url;
+  const c=document.getElementById('qrCodeContainer');
+  if(!c)return;
+  c.innerHTML='';
+  new QRCode(c,{text:url,width:156,height:156,colorDark:'#4e513b',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+}
+function printQR(){
+  const url=settings.checkinUrl||'https://yourpractice.com/checkin';
+  const name=settings.practiceName||'Your Practice';
+  const w=window.open('','_blank','width=420,height=520');
+  w.document.write(`<html><head><title>${name} Check-in QR</title><style>body{font-family:system-ui,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f0e8}.wrap{text-align:center;padding:36px;border:0.5px solid #dfd3c3;border-radius:14px;background:#fff;max-width:320px}h2{font-size:16px;font-weight:500;margin:0 0 4px;color:#2c2a24}p{font-size:13px;color:#6b6456;margin:0 0 22px}.frame{border:2px solid #4e513b;border-radius:9px;padding:12px;display:inline-block}.url{font-size:11px;color:#acad96;font-family:monospace;margin-top:12px}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div class="wrap"><h2>${name}</h2><p>Scan to check in for your appointment</p><div class="frame" id="qr"></div><div class="url">${url}</div></div><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById("qr"),{text:"${url}",width:190,height:190,colorDark:"#4e513b",colorLight:"#fff"});setTimeout(()=>window.print(),800)<\/script></body></html>`);
+  w.document.close();
+}
+
+// ── PLAN MODAL ────────────────────────────────────────────────────────
+function openPlanModal(id){
+  const p=id?plans.find(x=>x.id===id):null;
+  document.getElementById('planModalTitle').textContent=p?'Edit plan':'Add plan';
+  document.getElementById('pm-id').value=id||'';
+  document.getElementById('pm-name').value=p?p.name:'';
+  document.getElementById('pm-price').value=p?p.price:'';
+  document.getElementById('pm-maxmembers').value=p?p.maxMembers:1;
+  document.getElementById('planModal').classList.add('open');
+}
+function closePlanModal(){document.getElementById('planModal').classList.remove('open');}
+function savePlan(){
+  const id=document.getElementById('pm-id').value;
+  const name=document.getElementById('pm-name').value.trim();
+  if(!name){showToast('Please enter a plan name');return;}
+  const price=parseFloat(document.getElementById('pm-price').value)||0;
+  const maxMembers=parseInt(document.getElementById('pm-maxmembers').value)||1;
+  if(id){const p=plans.find(x=>x.id===+id);if(p)Object.assign(p,{name,price,maxMembers});showToast(name+' updated');}
+  else{plans.push({id:nextPlanId++,name,price,maxMembers});showToast(name+' added');}
+  persist();closePlanModal();renderMemberships();renderDashboard();
+}
+function deletePlan(id){
+  closeAllMenus();
+  plans=plans.filter(p=>p.id!==id);
+  persist();renderMemberships();renderDashboard();showToast('Plan removed');
+}
+
+// ── SUB MODAL ─────────────────────────────────────────────────────────
+function openSubModal(id){
+  const s=id?subs.find(x=>x.id===id):null;
+  document.getElementById('subModalTitle').textContent=s?'Edit subscription':'Add subscription';
+  document.getElementById('sm-id').value=id||'';
+  const planSel=document.getElementById('sm-plan');
+  planSel.innerHTML=plans.length?plans.map((p,i)=>`<option value="${p.id}">${p.name} — $${p.price}/mo</option>`).join(''):'<option value="">— add a plan first —</option>';
+  if(s){
+    document.getElementById('sm-name').value=s.groupName||'';
+    document.getElementById('sm-fee').value=s.fee||'';
+    document.getElementById('sm-primary').value=s.primary||'';
+    document.getElementById('sm-phone').value=s.phone||'';
+    document.getElementById('sm-members').value=(s.members||[]).join('\n');
+    document.getElementById('sm-since').value=s.since||'';
+    planSel.value=s.planId||'';
+  } else {
+    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-since'].forEach(id=>document.getElementById(id).value='');
+  }
+  planSel.onchange=function(){
+    const p=plans.find(x=>x.id===+this.value);
+    if(p)document.getElementById('sm-fee').value=p.price;
+  };
+  document.getElementById('subModal').classList.add('open');
+}
+function closeSubModal(){document.getElementById('subModal').classList.remove('open');}
+function saveSub(){
+  const id=document.getElementById('sm-id').value;
+  const groupName=document.getElementById('sm-name').value.trim();
+  if(!groupName){showToast('Please enter an account name');return;}
+  const planId=parseInt(document.getElementById('sm-plan').value)||null;
+  const fee=parseFloat(document.getElementById('sm-fee').value)||0;
+  const primary=document.getElementById('sm-primary').value.trim();
+  const phone=document.getElementById('sm-phone').value.trim();
+  const membersRaw=document.getElementById('sm-members').value;
+  const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
+  const since=document.getElementById('sm-since').value;
+  if(id){
+    const s=subs.find(x=>x.id===+id);
+    if(s)Object.assign(s,{groupName,planId,fee,primary,phone,members,since});
+    showToast(groupName+' updated');
+  } else {
+    subs.push({id:nextSubId++,groupName,planId,fee,primary,phone,members,since,active:true});
+    showToast(groupName+' added');
+  }
+  persist();closeSubModal();renderMemberships();renderDashboard();
+}
+function deleteSub(id){
+  subs=subs.filter(s=>s.id!==id);
+  persist();renderMemberships();renderDashboard();showToast('Subscription removed');
+}
+
+// ── PASS MODAL ────────────────────────────────────────────────────────
+function openPassModal(id){
+  const p=id?passes.find(x=>x.id===id):null;
+  document.getElementById('passModalTitle').textContent=p?'Edit punch pass':'Add punch pass';
+  document.getElementById('pass-id').value=id||'';
+  document.getElementById('pass-name').value=p?p.name:'';
+  document.getElementById('pass-primary').value=p?p.primary:'';
+  document.getElementById('pass-phone').value=p?p.phone:'';
+  document.getElementById('pass-members').value=p?(p.members||[]).join('\n'):'';
+  document.getElementById('pass-visits').value=p?p.visits:'';
+  document.getElementById('pass-date').value=p?p.date:'';
+  document.getElementById('passModal').classList.add('open');
+}
+function closePassModal(){document.getElementById('passModal').classList.remove('open');}
+function savePass(){
+  const id=document.getElementById('pass-id').value;
+  const name=document.getElementById('pass-name').value.trim();
+  if(!name){showToast('Please enter a name');return;}
+  const primary=document.getElementById('pass-primary').value.trim();
+  const phone=document.getElementById('pass-phone').value.trim();
+  const membersRaw=document.getElementById('pass-members').value;
+  const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
+  const visits=parseInt(document.getElementById('pass-visits').value)||0;
+  const date=document.getElementById('pass-date').value;
+  if(id){
+    const p=passes.find(x=>x.id===+id);
+    if(p)Object.assign(p,{name,primary,phone,members,visits,date});
+    showToast(name+' updated');
+  } else {
+    passes.push({id:nextPassId++,name,primary,phone,members,visits,date,active:true});
+    showToast(name+' added');
+  }
+  persist();closePassModal();renderMemberships();renderDashboard();
+}
+function deletePass(id){
+  passes=passes.filter(p=>p.id!==id);
+  persist();renderMemberships();renderDashboard();showToast('Pass removed');
+}
+
+// ── RENDER MEMBERSHIPS ────────────────────────────────────────────────
+function planColor(planId,type){
+  const idx=plans.findIndex(p=>p.id===planId);
+  const i=idx<0?0:idx;
+  return type==='col'?PCOLS[i%PCOLS.length]:type==='bg'?PBGS[i%PBGS.length]:PTXT[i%PTXT.length];
+}
+
+function showMTab(name,el){
+  document.querySelectorAll('.m-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.m-tab-view').forEach(v=>v.style.display='none');
+  el.classList.add('active');
+  document.getElementById('mview-'+name).style.display='block';
+}
+
+function stagePatient(subId,action){
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  if(action==='active'){
+    s.needsPlan=false;
+    showToast(s.groupName+' moved to Active — edit to assign a plan');
+  } else if(action==='pass'){
+    passes.push({id:nextPassId++,name:s.groupName,primary:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,date:s.since||'',active:true});
+    subs=subs.filter(x=>x.id!==subId);
+    showToast(s.groupName+' moved to Punch passes');
+  } else if(action==='inactive'){
+    s.active=false;
+    s.needsPlan=false;
+    showToast(s.groupName+' marked inactive');
+  }
+  persist();renderMemberships();renderDashboard();
+}
+
+function renderMemberships(){
+  const assigned=subs.filter(s=>s.active&&!s.needsPlan);
+  const unassigned=subs.filter(s=>s.active&&s.needsPlan);
+  const totalSubs=assigned.length;
+  const totalPts=assigned.reduce((a,s)=>a+1+(s.members||[]).length,0);
+  const totalMRR=assigned.reduce((a,s)=>a+s.fee,0);
+  const passCount=passes.filter(p=>p.active).length;
+
+  document.getElementById('m-subs').textContent=totalSubs;
+  document.getElementById('m-pts').textContent=totalPts;
+  document.getElementById('m-mrr').textContent='$'+totalMRR.toLocaleString();
+  document.getElementById('m-pass').textContent=passCount;
+
+  document.getElementById('mtab-count-patients').textContent=unassigned.length;
+  document.getElementById('mtab-count-active').textContent=totalSubs;
+  document.getElementById('mtab-count-punch').textContent=passCount;
+  document.getElementById('mtab-count-plans').textContent=plans.length;
+
+  const cnt=document.getElementById('mtab-count-patients');
+  if(unassigned.length>0){cnt.style.background='#f5e6cc';cnt.style.color='#6b3f0e';}
+  else{cnt.style.background='';cnt.style.color='';}
+
+  // ── PATIENTS TAB ──
+  const sl=document.getElementById('patientStagingList');
+  if(!unassigned.length){
+    sl.innerHTML='<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--oak)"></i>All patients sorted — nice work!</div>';
+  } else {
+    sl.innerHTML=unassigned.map(s=>{
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      return `<div class="staging-row">
+        <div class="avatar" style="background:var(--linen);color:var(--text-secondary)">${initials}</div>
+        <div class="staging-row-info">
+          <div class="staging-row-name">${s.groupName}</div>
+          <div class="staging-row-detail">${s.phone||'no phone'} · since ${since}</div>
+        </div>
+        <div class="staging-actions">
+          <button class="stage-btn active-btn" onclick="stagePatient(${s.id},'active')"><i class="ti ti-id-badge" style="font-size:12px"></i> Active</button>
+          <button class="stage-btn pass-btn" onclick="stagePatient(${s.id},'pass')"><i class="ti ti-ticket" style="font-size:12px"></i> Punch pass</button>
+          <button class="stage-btn inactive-btn" onclick="stagePatient(${s.id},'inactive')"><i class="ti ti-user-off" style="font-size:12px"></i> Inactive</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── ACTIVE TAB ──
+  const subList=document.getElementById('subGroupList');
+  if(!assigned.length){
+    subList.innerHTML='<div class="empty-state"><i class="ti ti-users"></i>No active subscriptions yet</div>';
+  } else {
+    subList.innerHTML=assigned.map(s=>{
+      const plan=plans.find(p=>p.id===s.planId);
+      const ci=plan?plans.indexOf(plan):0;
+      const bg=PBGS[ci%PBGS.length];
+      const tc=PTXT[ci%PTXT.length];
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      const allMembers=[s.primary,...(s.members||[])].filter(Boolean);
+      return `<div class="sub-group">
+        <div class="sub-group-header">
+          <div class="sub-group-left">
+            <div class="sub-group-icon" style="background:${bg};color:${tc}">${initials}</div>
+            <div>
+              <div class="sub-group-name">${s.groupName}</div>
+              <div class="sub-group-plan">${plan?plan.name:'No plan — edit to assign'} · since ${since}${s.phone?' · '+s.phone:''}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div>
+              <div class="sub-group-fee">$${s.fee.toLocaleString()}/mo</div>
+              <div class="sub-group-fee-label">${allMembers.length} member${allMembers.length!==1?'s':''}</div>
+            </div>
+            <div style="position:relative">
+              <button class="menu-btn" style="position:static" onclick="toggleMenu('sub-${s.id}',event)"><i class="ti ti-dots-vertical"></i></button>
+              <div class="dropdown" id="menu-sub-${s.id}">
+                <div class="dropdown-item" onclick="openSubModal(${s.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit subscription</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" onclick="deleteSub(${s.id})"><i class="ti ti-trash" style="font-size:14px"></i> Remove</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sub-group-body">
+          <div class="sub-group-section">
+            <div class="sub-section-label">Primary / account holder</div>
+            <span class="member-pill primary"><i class="ti ti-user" style="font-size:11px"></i>${s.primary||'—'}</span>
+          </div>
+          ${s.members&&s.members.length?`<div class="sub-group-section"><div class="sub-section-label">Members</div>${s.members.map(m=>`<span class="member-pill">${m}</span>`).join('')}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PUNCH PASSES TAB ──
+  const pl=document.getElementById('passHolderList');
+  const activePasses=passes.filter(p=>p.active);
+  if(!activePasses.length){
+    pl.innerHTML='<div class="empty-state"><i class="ti ti-ticket"></i>No punch pass holders yet</div>';
+  } else {
+    pl.innerHTML=activePasses.map(p=>{
+      const low=p.visits<=2;
+      const purchaseDate=p.date?new Date(p.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+      const initials=(p.primary||p.name).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return `<div class="sub-group" style="${low?'border-color:#d4a090':''}">
+        <div class="sub-group-header" style="${low?'background:#fef5f0':''}">
+          <div class="sub-group-left">
+            <div class="sub-group-icon" style="background:${low?'#f5ddd8':'#f5e6cc'};color:${low?'#7a2e1e':'#6b3f0e'}"><i class="ti ti-ticket" style="font-size:15px"></i></div>
+            <div>
+              <div class="sub-group-name">${p.name}${low?` <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#f5ddd8;color:#7a2e1e;margin-left:6px">⚠ ${p.visits} visit${p.visits!==1?'s':''} left</span>`:''}</div>
+              <div class="sub-group-plan">12-visit pass · ${p.phone||'no phone'} · purchased ${purchaseDate}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div><div class="sub-group-fee">${p.visits} / 12</div><div class="sub-group-fee-label">visits left</div></div>
+            <div style="position:relative">
+              <button class="menu-btn" style="position:static" onclick="toggleMenu('pass-${p.id}',event)"><i class="ti ti-dots-vertical"></i></button>
+              <div class="dropdown" id="menu-pass-${p.id}">
+                <div class="dropdown-item" onclick="openPassModal(${p.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit pass</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" onclick="deletePass(${p.id})"><i class="ti ti-trash" style="font-size:14px"></i> Remove</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sub-group-body">
+          <div class="sub-group-section"><div class="sub-section-label">Primary holder</div><span class="member-pill primary"><i class="ti ti-user" style="font-size:11px"></i>${p.primary||p.name}</span></div>
+          ${p.members&&p.members.length?`<div class="sub-group-section"><div class="sub-section-label">Also on this pass</div>${p.members.map(m=>`<span class="member-pill">${m}</span>`).join('')}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PLANS TAB ──
+  const tc=document.getElementById('tierCards');
+  if(!plans.length){
+    tc.innerHTML='<div class="empty-state" style="grid-column:1/-1;padding:24px"><i class="ti ti-id-badge"></i>No plans yet</div>';
+  } else {
+    tc.innerHTML=plans.map((p,i)=>{
+      const col=PCOLS[i%PCOLS.length];
+      const planSubs=assigned.filter(s=>s.planId===p.id).length;
+      const planMRR=assigned.filter(s=>s.planId===p.id).reduce((a,s)=>a+s.fee,0);
+      const pct=totalSubs>0?Math.round(planSubs/totalSubs*100):0;
+      return `<div class="tier-card">
+        <div style="position:relative;float:right">
+          <button class="menu-btn" onclick="toggleMenu(${p.id},event)"><i class="ti ti-dots-vertical"></i></button>
+          <div class="dropdown" id="menu-${p.id}">
+            <div class="dropdown-item" onclick="openPlanModal(${p.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit plan</div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item danger" onclick="deletePlan(${p.id})"><i class="ti ti-trash" style="font-size:14px"></i> Delete plan</div>
+          </div>
+        </div>
+        <div class="tier-name" style="color:${col}">${p.name}</div>
+        <div class="tier-count">${planSubs} <span style="font-size:13px;font-weight:400;color:var(--text-secondary)">subs</span></div>
+        <div class="tier-mrr">$${planMRR.toLocaleString()}/mo · $${p.price}/mo per sub</div>
+        <div class="tier-bar-bg"><div class="tier-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>`;
+    }).join('');
+  }
+}
+
+
+// ── RENDER DASHBOARD ──────────────────────────────────────────────────
+function renderDashboard(){
+  updateLabels();
+  const activeSubs=subs.filter(s=>s.active);
+  const totalSubs=activeSubs.length;
+  const totalPts=activeSubs.reduce((a,s)=>a+1+(s.members||[]).length,0);
+  const totalMRR=activeSubs.reduce((a,s)=>a+s.fee,0);
+  const passCount=passes.filter(p=>p.active).length;
+  const convPct=totalPts>0?Math.round(totalSubs/totalPts*100):0;
+
+  document.getElementById('d-subs').textContent=totalSubs;
+  document.getElementById('d-pts-sub').textContent='covers '+totalPts+' patient'+(totalPts!==1?'s':'');
+  document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
+  document.getElementById('d-pass').textContent=passCount;
+  document.getElementById('d-conv').textContent=convPct+'%';
+  document.getElementById('conv-pct-label').textContent=convPct+'%';
+  document.getElementById('d-conv-sub').textContent=totalPts?totalSubs+' subs · '+totalPts+' patients':'no data yet';
+  document.getElementById('conv-arc').style.strokeDashoffset=125.7-(convPct/100*125.7);
+
+  const waiting=queue.filter(q=>q.status!=='in');
+  document.getElementById('d-queue-badge').textContent=waiting.length+' waiting';
+  const dq=document.getElementById('dashQueue');
+  if(!queue.length){dq.innerHTML='<div class="empty-state"><i class="ti ti-calendar"></i>No check-ins yet today</div>';}
+  else renderQueueItems(dq,queue);
+
+  if(pieChart){pieChart.destroy();pieChart=null;}
+  if(mrrChart){mrrChart.destroy();mrrChart=null;}
+  if(plans.length){
+    const subsByPlan=plans.map(p=>activeSubs.filter(s=>s.planId===p.id).length);
+    const mrrByPlan=plans.map(p=>activeSubs.filter(s=>s.planId===p.id).reduce((a,s)=>a+s.fee,0));
+    const colors=plans.map((_,i)=>PCOLS[i%PCOLS.length]);
+    pieChart=new Chart(document.getElementById('planPieChart'),{type:'doughnut',data:{labels:plans.map(p=>p.name),datasets:[{data:subsByPlan,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},color:'#6b6456'}}}}});
+    mrrChart=new Chart(document.getElementById('planMrrChart'),{type:'bar',data:{labels:plans.map(p=>p.name),datasets:[{label:'MRR',data:mrrByPlan,backgroundColor:colors,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString(),color:'#6b6456'},grid:{color:'#f0ece6'}}}}});
+  }
+}
+
+// ── QUEUE ─────────────────────────────────────────────────────────────
+function renderQueueItems(el,list){
+  el.innerHTML=list.map(q=>{
+    const sub=subs.find(s=>[s.primary,...(s.members||[])].some(m=>m&&m.toLowerCase()===q.name.toLowerCase()));
+    const plan=sub?plans.find(p=>p.id===sub.planId):null;
+    const ci=plan?plans.indexOf(plan):5;
+    return `<div class="queue-item">
+      <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${q.initials}</div>
+      <div class="q-info"><div class="q-name">${q.name}</div><div class="q-detail">${plan?plan.name:'Walk-in'} · ${q.time}${q.visitCount?' · visit #'+q.visitCount+' this month':''}</div></div>
+      <div class="q-status"><div class="dot ${q.status==='in'?'dot-in':q.status==='ready'?'dot-ready':'dot-wait'}"></div>${q.status==='in'?'In session':q.status==='ready'?'Ready':'Waiting'}</div>
+    </div>`;
+  }).join('');
+}
+function renderKioskQueue(){
+  const waiting=queue.filter(q=>q.status!=='in');
+  document.getElementById('queueBadge').textContent=waiting.length+' waiting';
+  const el=document.getElementById('kioskQueue');
+  if(!waiting.length){el.innerHTML='<div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div>';}
+  else renderQueueItems(el,waiting);
+}
+function kioskCheckIn(){
+  const name=document.getElementById('kioskName').value.trim();
+  if(!name)return;
+  queue.unshift({id:Date.now(),name,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),status:'waiting',initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()});
+  persist();
+  document.getElementById('kioskName').value='';
+  renderKioskQueue();renderDashboard();
+  showToast(name+' checked in');
+}
+
+// ── SMS ───────────────────────────────────────────────────────────────
+function buildSmsAudience(){
+  const allPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0)+passes.filter(p=>p.active).length;
+  const subPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0);
+  const passCount=passes.filter(p=>p.active).length;
+  let opts=`<option value="all">All active patients + punch passes (${allPts})</option>
+    <option value="sub">Subscribers only (${subPts})</option>
+    <option value="pass">Punch pass holders only (${passCount})</option>`;
+  plans.forEach(p=>{
+    const count=subs.filter(s=>s.active&&s.planId===p.id).reduce((a,s)=>a+1+(s.members||[]).length,0);
+    opts+=`<option value="plan-${p.id}">${p.name} plan (${count} patients)</option>`;
+  });
+  document.getElementById('smsTier').innerHTML=opts;
+  updateSmsCount();
+}
+function updateSmsCount(){
+  const v=document.getElementById('smsTier').value;
+  let count=0;
+  if(v==='all')count=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0)+passes.filter(p=>p.active).length;
+  else if(v==='sub')count=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0);
+  else if(v==='pass')count=passes.filter(p=>p.active).length;
+  else if(v.startsWith('plan-')){const pid=parseInt(v.replace('plan-',''));count=subs.filter(s=>s.active&&s.planId===pid).reduce((a,s)=>a+1+(s.members||[]).length,0);}
+  document.getElementById('recipientLine').textContent='Sending to '+count+' patient'+(count!==1?'s':'');
+}
+function updateChar(ta){document.getElementById('charCount').textContent='('+ta.value.length+'/160)';document.getElementById('previewBubble').textContent=ta.value||'Your message will appear here.';}
+function fillTemplate(v){
+  const name=settings.practiceName||'Your Practice';
+  const phone=settings.phone||'your clinic number';
+  const t={closure:`Hi {name}, ${name} will be CLOSED [DATE]. We apologize for the inconvenience. Please call ${phone} to reschedule. Thank you!`,holiday:`Hi {name}, holiday hours this week: [HOURS]. Closed [DAYS]. — ${name}`,reminder:`Hi {name}, reminder: you have an appointment tomorrow at ${name}. Reply CONFIRM or call ${phone} to reschedule.`,pass_low:`Hi {name}, your ${name} punch pass has 2 visits remaining. Call us to renew. We appreciate you!`,custom:''};
+  if(!v)return;
+  document.getElementById('smsBody').value=t[v]||'';
+  updateChar(document.getElementById('smsBody'));
+}
+let shArr=[];
+function sendSMS(){
+  const msg=document.getElementById('smsBody').value.trim();
+  if(!msg){showToast('Please write a message first');return;}
+  const tier=document.getElementById('smsTier');
+  shArr.unshift({msg,label:tier.options[tier.selectedIndex].text,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
+  document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
+  showToast('SMS queued — connect Twilio in Settings to send live');
+}
+
+// ── DROPDOWNS ─────────────────────────────────────────────────────────
+function closeAllMenus(){document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));}
+function toggleMenu(id,e){e.stopPropagation();const m=document.getElementById('menu-'+id);const was=m.classList.contains('open');closeAllMenus();if(!was)m.classList.add('open');}
+document.addEventListener('click',closeAllMenus);
+function handleOverlay(e,id){if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('open');}
+
+
+// ── JANE CSV SYNC ─────────────────────────────────────────────────────
+
+let syncHistory=JSON.parse(localStorage.getItem('sp_syncHistory')||'[]');
+let pendingSync=null;
+
+function renderSyncHistory(){
+  const el=document.getElementById('syncHistory');
+  if(!syncHistory.length){el.innerHTML='<div class="empty-state" style="padding:16px"><i class="ti ti-history"></i>No syncs yet</div>';return;}
+  el.innerHTML=syncHistory.slice(0,10).map(h=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);margin-bottom:6px;background:var(--surface)">
+      <i class="ti ti-circle-check" style="font-size:16px;color:var(--oak)"></i>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${h.date}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">${h.added} added · ${h.updated} updated · ${h.inactive} flagged inactive · ${h.total} total in file</div>
+      </div>
+    </div>`).join('');
+}
+
+function dzOver(e){e.preventDefault();document.getElementById('dropZone').classList.add('dragover');}
+function dzLeave(e){document.getElementById('dropZone').classList.remove('dragover');}
+function dzDrop(e){
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(file&&file.name.endsWith('.csv'))processCSV(file);
+  else showToast('Please drop a .csv file');
+}
+function handleFileSelect(input){
+  if(input.files[0])processCSV(input.files[0]);
+}
+
+function processCSV(file){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const text=e.target.result;
+      const rows=parseCSV(text);
+      if(!rows.length){showToast('CSV appears empty');return;}
+      const headers=rows[0].map(h=>h.trim().toLowerCase().replace(/\s+/g,'_'));
+
+      // Map Jane column names to what we need
+      const col=(name)=>{
+        const aliases={
+          first_name:['first_name','firstname','first name'],
+          last_name:['last_name','lastname','last name'],
+          preferred_name:['preferred_name','preferred name','preferred'],
+          mobile:['mobile_phone','mobile phone','mobile','cell','cell_phone'],
+          home_phone:['home_phone','home phone','home'],
+          email:['email','email_address'],
+          member_since:['member_since','member since'],
+          first_visit:['first_visit','first visit'],
+          last_visit:['last_visit','last visit'],
+          active:['active','status'],
+          guid:['patient_guid','guid','patient_id']
+        };
+        const list=aliases[name]||[name];
+        for(const a of list){const i=headers.indexOf(a);if(i>=0)return i;}
+        return -1;
+      };
+
+      // Parse each data row
+      const patients=rows.slice(1).map(r=>{
+        const get=(name)=>{const i=col(name);return i>=0?(r[i]||'').trim():''};
+        const firstName=get('first_name');
+        const lastName=get('last_name');
+        if(!firstName&&!lastName)return null;
+        const preferred=get('preferred_name');
+        const displayName=(preferred||firstName)+' '+lastName;
+        const phone=get('mobile')||get('home_phone');
+        const email=get('email');
+        const memberSince=get('member_since');
+        const firstVisit=get('first_visit');
+        const lastVisit=get('last_visit');
+        const activeRaw=get('active').toLowerCase();
+        const isActive=activeRaw===''||activeRaw==='true'||activeRaw==='yes'||activeRaw==='active'||activeRaw==='1';
+        const guid=get('guid');
+        return{firstName,lastName,preferred,displayName,phone,email,memberSince,firstVisit,lastVisit,isActive,guid};
+      }).filter(Boolean);
+
+      // Categorise each row
+      const newPts=[],updates=[],inactivePts=[],skipped=[];
+
+      patients.forEach(jp=>{
+        if(!jp.isActive){inactivePts.push(jp);return;}
+        // Try to find a match in existing subs by name
+        const nameMatch=(n)=>n.toLowerCase().replace(/\s+/g,'')===jp.displayName.toLowerCase().replace(/\s+/g,'');
+        const existingSub=subs.find(s=>
+          nameMatch(s.primary)||
+          (s.members||[]).some(m=>nameMatch(m))
+        );
+        const existingPass=passes.find(p=>nameMatch(p.primary||p.name)||(p.members||[]).some(m=>nameMatch(m)));
+        const exists=existingSub||existingPass;
+
+        if(!exists){
+          newPts.push(jp);
+        } else {
+          // Check if phone or email changed
+          const currentPhone=existingSub?existingSub.phone:existingPass?existingPass.phone:'';
+          if(jp.phone&&jp.phone!==currentPhone){
+            updates.push({...jp,oldPhone:currentPhone,sub:existingSub,pass:existingPass});
+          } else {
+            skipped.push(jp);
+          }
+        }
+      });
+
+      pendingSync={newPts,updates,inactivePts,skipped,total:patients.length};
+      renderSyncPreview(pendingSync);
+    } catch(err){
+      showToast('Could not read CSV — make sure it is a Jane patient export');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text){
+  const rows=[];
+  const lines=text.split(/\r?\n/);
+  for(const line of lines){
+    if(!line.trim())continue;
+    const row=[];let cur='';let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){row.push(cur);cur='';}
+      else if(c==='\t'&&!inQ){row.push(cur);cur='';}
+      else cur+=c;
+    }
+    row.push(cur);
+    rows.push(row);
+  }
+  return rows;
+}
+
+function renderSyncPreview(data){
+  document.getElementById('syncPreview').style.display='block';
+  document.getElementById('dropZoneCard').style.display='none';
+
+  document.getElementById('syncPreviewTitle').textContent=
+    `Ready to sync — ${data.total} patients in file`;
+
+  // Summary pills
+  document.getElementById('syncSummaryPills').innerHTML=`
+    <span class="sync-pill pill-new">${data.newPts.length} new</span>
+    <span class="sync-pill pill-update">${data.updates.length} phone updates</span>
+    <span class="sync-pill pill-inactive">${data.inactivePts.length} inactive in Jane</span>
+    <span class="sync-pill pill-skip">${data.skipped.length} no change</span>`;
+
+  // New patients tab
+  document.getElementById('sync-tab-new').innerHTML=data.newPts.length
+    ? data.newPts.map(p=>`
+      <div class="sync-row new">
+        <i class="ti ti-user-plus" style="font-size:15px;color:#3a3f28;flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">${p.phone||'no phone'}</div>
+        <span class="sync-pill pill-new">new</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-user-check"></i>No new patients</div>';
+
+  // Updates tab
+  document.getElementById('sync-tab-update').innerHTML=data.updates.length
+    ? data.updates.map(p=>`
+      <div class="sync-row update">
+        <i class="ti ti-edit" style="font-size:15px;color:#6b3f0e;flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">${p.oldPhone||'no old phone'} → ${p.phone}</div>
+        <span class="sync-pill pill-update">phone changed</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i>No updates needed</div>';
+
+  // Inactive tab
+  document.getElementById('sync-tab-inactive').innerHTML=data.inactivePts.length
+    ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;padding:8px 12px;background:#f5ddd8;border-radius:7px">These patients are marked inactive in Jane. Review before removing from SpinePoint — they may still be on an active plan.</div>`
+      +data.inactivePts.map(p=>`
+      <div class="sync-row inactive">
+        <i class="ti ti-user-off" style="font-size:15px;color:#7a2e1e;flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">last visit: ${p.lastVisit||'—'}</div>
+        <span class="sync-pill pill-inactive">inactive in Jane</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i>No inactive patients</div>';
+
+  // Skipped tab
+  document.getElementById('sync-tab-skip').innerHTML=data.skipped.length
+    ? data.skipped.map(p=>`
+      <div class="sync-row skip">
+        <i class="ti ti-minus" style="font-size:15px;color:var(--text-hint);flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">${p.phone||'no phone'}</div>
+        <span class="sync-pill pill-skip">no change</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i>None</div>';
+
+  showSyncTab('new',document.getElementById('tab-new'));
+  updateSyncTabCounts(data);
+}
+
+function updateSyncTabCounts(data){
+  document.getElementById('tab-new').textContent=`New patients (${data.newPts.length})`;
+  document.getElementById('tab-update').textContent=`Updates (${data.updates.length})`;
+  document.getElementById('tab-inactive').textContent=`Inactive in Jane (${data.inactivePts.length})`;
+  document.getElementById('tab-skip').textContent=`No change (${data.skipped.length})`;
+}
+
+function showSyncTab(name,el){
+  document.querySelectorAll('.sync-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sync-tab-content').forEach(t=>t.style.display='none');
+  el.classList.add('active');
+  document.getElementById('sync-tab-'+name).style.display='block';
+}
+
+function confirmSync(){
+  if(!pendingSync)return;
+  const{newPts,updates}=pendingSync;
+
+  // Add new patients as unassigned entries (no plan yet — user assigns in Memberships)
+  newPts.forEach(p=>{
+    // Add as a single-person subscription placeholder so they appear in the system
+    // User can then assign plan and group them properly in Memberships
+    subs.push({
+      id:nextSubId++,
+      groupName:p.displayName,
+      planId:null,
+      fee:0,
+      primary:p.displayName,
+      phone:p.phone,
+      members:[],
+      since:p.memberSince||p.firstVisit||'',
+      active:true,
+      needsPlan:true
+    });
+  });
+
+  // Apply phone updates
+  updates.forEach(u=>{
+    if(u.sub)u.sub.phone=u.phone;
+    if(u.pass)u.pass.phone=u.phone;
+  });
+
+  // Log sync
+  const entry={
+    date:new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+    added:newPts.length,
+    updated:updates.length,
+    inactive:pendingSync.inactivePts.length,
+    total:pendingSync.total
+  };
+  syncHistory.unshift(entry);
+  localStorage.setItem('sp_syncHistory',JSON.stringify(syncHistory));
+
+  persist();
+  renderSyncHistory();
+  resetSync();
+  renderMemberships();
+  renderDashboard();
+
+  const msg=`Sync complete — ${newPts.length} added, ${updates.length} updated`;
+  showToast(msg);
+
+  if(newPts.length>0){
+    setTimeout(()=>showToast('New patients added without a plan — assign plans in Memberships'),3500);
+  }
+}
+
+function resetSync(){
+  pendingSync=null;
+  document.getElementById('syncPreview').style.display='none';
+  document.getElementById('dropZoneCard').style.display='block';
+  document.getElementById('csvFileInput').value='';
+}
+
+// ── END JANE CSV SYNC ─────────────────────────────────────────────────
+
+
+// ── GOOGLE SHEET QUEUE POLLING ────────────────────────────────────────
+let pollInterval=null;
+
+function startPolling(){
+  if(pollInterval)clearInterval(pollInterval);
+  if(!settings.appsScriptUrl)return;
+  pollSheetQueue();
+  pollInterval=setInterval(pollSheetQueue,30000);
+}
+
+function pollSheetQueue(){
+  if(!settings.appsScriptUrl)return;
+  const sheetId='1z8V_eABZ1iw-qbVBTxVqDd1yqg3vo_eH-vbf7YgXWvU';
+  const csvUrl='https://docs.google.com/spreadsheets/d/'+sheetId+'/export?format=csv&gid=0&t='+Date.now();
+  fetch(csvUrl,{cache:'no-store'})
+    .then(r=>r.text())
+    .then(text=>{
+      const rows=parseSheetCSV(text);
+      if(rows.length<2)return;
+      const today=new Date().toISOString().split('T')[0];
+      const todayRows=rows.slice(1).filter(r=>r[0]&&r[0].toString().startsWith(today));
+      const existing=queue.map(q=>q.name.toLowerCase());
+      let added=0;
+      todayRows.forEach(r=>{
+        const name=(r[1]||'').trim();
+        const visitCount=parseInt(r[3])||1;
+        if(name&&!existing.includes(name.toLowerCase())){
+          queue.push({
+            id:Date.now()+Math.random(),
+            name:name,
+            time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+            status:'waiting',
+            initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
+            visitCount:visitCount,
+            fromSheet:true
+          });
+          existing.push(name.toLowerCase());
+          added++;
+        }
+      });
+      if(added>0){
+        persist();
+        renderKioskQueue();
+        renderDashboard();
+        showToast(added+' patient'+(added>1?'s':'')+' checked in via QR');
+      }
+    })
+    .catch(()=>{});
+}
+
+function parseSheetCSV(text){
+  const rows=[];
+  const lines=text.split(/\r?\n/);
+  for(const line of lines){
+    if(!line.trim())continue;
+    const row=[];let cur='';let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){row.push(cur);cur='';}
+      else cur+=c;
+    }
+    row.push(cur);
+    rows.push(row);
+  }
+  return rows;
+}
+// ── END QUEUE POLLING ─────────────────────────────────────────────────
+
+function showToast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
+
+// ── INIT ──────────────────────────────────────────────────────────────
+window.onload=function(){
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();startPolling();
+  if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
+};
+</script>
+</body>
+</html>

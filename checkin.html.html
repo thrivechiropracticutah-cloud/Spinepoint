@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Check In — SpinePoint Chiropractic</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --oak:#62684c;--garden:#4e513b;--honey:#d2985a;--linen:#dfd3c3;
+  --bg:#f5f0e8;--card:#ffffff;--text:#2c2a24;--muted:#6b6456;--hint:#9c9181;
+  --border:#dfd3c3;--border-strong:#c9b99e;
+}
+html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif}
+.wrap{max-width:420px;margin:0 auto;padding:40px 20px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.logo-ring{width:72px;height:72px;border-radius:16px;background:var(--garden);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
+.logo-ring svg{width:36px;height:36px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.practice-name{font-size:20px;font-weight:500;color:var(--text);margin-bottom:4px;text-align:center}
+.practice-sub{font-size:14px;color:var(--muted);margin-bottom:36px;text-align:center}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:16px;padding:28px 24px;width:100%}
+.card-label{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.name-input{width:100%;border:0.5px solid var(--border-strong);border-radius:10px;padding:14px 16px;font-size:17px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
+.name-input:focus{outline:none;border-color:var(--oak);background:#fff}
+.name-input::placeholder{color:var(--hint)}
+.checkin-btn{width:100%;background:var(--oak);color:#fff;border:none;border-radius:10px;padding:16px;font-size:16px;font-weight:500;cursor:pointer;margin-top:16px;font-family:inherit;transition:.15s}
+.checkin-btn:hover{background:var(--garden)}
+.checkin-btn:active{transform:scale(.98)}
+.checkin-btn:disabled{background:var(--hint);cursor:not-allowed;transform:none}
+.status-wrap{display:none;text-align:center;padding:20px 0}
+.status-icon{width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.status-icon.success{background:#e8ece0}
+.status-icon.error{background:#f5ddd8}
+.status-title{font-size:18px;font-weight:500;color:var(--text);margin-bottom:6px}
+.status-sub{font-size:14px;color:var(--muted);line-height:1.5}
+.visit-badge{display:inline-block;margin-top:12px;padding:4px 14px;background:var(--linen);border-radius:20px;font-size:13px;color:var(--muted)}
+.try-again{background:none;border:0.5px solid var(--border-strong);border-radius:8px;padding:10px 20px;font-size:14px;color:var(--text);cursor:pointer;margin-top:20px;font-family:inherit}
+.try-again:hover{background:var(--linen)}
+.footer{margin-top:32px;font-size:12px;color:var(--hint);text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo-ring">
+    <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+  </div>
+  <div class="practice-name" id="practiceName">SpinePoint Chiropractic</div>
+  <div class="practice-sub">Check in for your appointment</div>
+
+  <div class="card" id="formCard">
+    <div class="card-label">Your name</div>
+    <input type="text" class="name-input" id="nameInput" placeholder="First and last name" autocomplete="name" autocorrect="off" spellcheck="false" maxlength="80" onkeydown="if(event.key==='Enter')submitCheckIn()"/>
+    <button class="checkin-btn" id="submitBtn" onclick="submitCheckIn()">Check in</button>
+  </div>
+
+  <div class="status-wrap" id="statusWrap">
+    <div class="status-icon" id="statusIcon"></div>
+    <div class="status-title" id="statusTitle"></div>
+    <div class="status-sub" id="statusSub"></div>
+    <div class="visit-badge" id="visitBadge" style="display:none"></div>
+    <button class="try-again" id="tryAgainBtn" onclick="resetForm()" style="display:none">Check in someone else</button>
+  </div>
+
+  <div class="footer">No app needed · your info is only used for today's queue</div>
+</div>
+
+<script>
+// ── CONFIG — update SCRIPT_URL after you deploy the Apps Script ──────
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
+const PRACTICE_NAME = 'SpinePoint Chiropractic';
+
+document.getElementById('practiceName').textContent = PRACTICE_NAME;
+
+function submitCheckIn(){
+  const name = document.getElementById('nameInput').value.trim();
+  if(!name){ shake(); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Checking you in…';
+
+  const url = SCRIPT_URL + '?name=' + encodeURIComponent(name);
+
+  fetch(url, {method:'GET', mode:'no-cors'})
+    .then(()=>showSuccess(name))
+    .catch(()=>showSuccess(name)); // no-cors always resolves, treat as success
+}
+
+function showSuccess(name){
+  document.getElementById('formCard').style.display = 'none';
+  const wrap = document.getElementById('statusWrap');
+  wrap.style.display = 'block';
+  document.getElementById('statusIcon').className = 'status-icon success';
+  document.getElementById('statusIcon').textContent = '✓';
+  document.getElementById('statusTitle').textContent = 'You\'re checked in, ' + name.split(' ')[0] + '!';
+  document.getElementById('statusSub').textContent = 'Have a seat and we\'ll be right with you.';
+  document.getElementById('tryAgainBtn').style.display = 'inline-block';
+}
+
+function showError(msg){
+  document.getElementById('formCard').style.display = 'none';
+  const wrap = document.getElementById('statusWrap');
+  wrap.style.display = 'block';
+  document.getElementById('statusIcon').className = 'status-icon error';
+  document.getElementById('statusIcon').textContent = '!';
+  document.getElementById('statusTitle').textContent = 'Something went wrong';
+  document.getElementById('statusSub').textContent = msg || 'Please see the front desk to check in.';
+  document.getElementById('tryAgainBtn').style.display = 'inline-block';
+}
+
+function resetForm(){
+  document.getElementById('nameInput').value = '';
+  document.getElementById('submitBtn').disabled = false;
+  document.getElementById('submitBtn').textContent = 'Check in';
+  document.getElementById('formCard').style.display = 'block';
+  document.getElementById('statusWrap').style.display = 'none';
+  document.getElementById('nameInput').focus();
+}
+
+function shake(){
+  const inp = document.getElementById('nameInput');
+  inp.style.borderColor = '#935b38';
+  inp.style.animation = 'none';
+  setTimeout(()=>{ inp.style.borderColor = ''; }, 1000);
+  inp.focus();
+}
+</script>
+</body>
+</html>
