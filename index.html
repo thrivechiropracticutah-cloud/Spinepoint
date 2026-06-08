@@ -1339,18 +1339,21 @@ function pollSheetQueue(){
   window[cbName]=function(data){
     try{
       if(data&&data.rows&&data.rows.length){
-        const today=new Date().toISOString().split('T')[0];
+        const now=new Date();
+        const todayStr=now.toDateString(); // e.g. "Mon Jun 08 2026"
         const existing=queue.map(q=>q.name.toLowerCase());
         let added=0;
         data.rows.forEach(function(r){
           const name=(r.name||'').trim();
-          const rowDate=(r.timestamp||'').substring(0,10);
           const visitCount=parseInt(r.visitCount)||1;
-          if(name&&rowDate===today&&!existing.includes(name.toLowerCase())){
+          // Parse the timestamp — works with both ISO and long date format
+          const rowDate=new Date(r.timestamp||'');
+          const isToday=(!isNaN(rowDate))&&(rowDate.toDateString()===todayStr);
+          if(name&&isToday&&!existing.includes(name.toLowerCase())){
             queue.push({
               id:Date.now()+Math.random(),
               name:name,
-              time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+              time:rowDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
               status:'waiting',
               initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
               visitCount:visitCount,
@@ -1381,9 +1384,6 @@ function pollSheetQueue(){
   document.head.appendChild(s);
 }
 
-// ── END QUEUE POLLING ─────────────────────────────────────────────────
-
-function showToast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
 
 // ── INIT ──────────────────────────────────────────────────────────────
 window.onload=function(){
