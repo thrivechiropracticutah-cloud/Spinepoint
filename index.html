@@ -1381,20 +1381,6 @@ function pollSheetQueue(){
   document.head.appendChild(s);
 }
 
-  for(const line of lines){
-    if(!line.trim())continue;
-    const row=[];let cur='';let inQ=false;
-    for(let i=0;i<line.length;i++){
-      const c=line[i];
-      if(c==='"'){inQ=!inQ;}
-      else if(c===','&&!inQ){row.push(cur);cur='';}
-      else cur+=c;
-    }
-    row.push(cur);
-    rows.push(row);
-  }
-  return rows;
-}
 // ── END QUEUE POLLING ─────────────────────────────────────────────────
 
 function showToast(msg){const t=document.getElementById('toast');document.getElementById('toastMsg').textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
