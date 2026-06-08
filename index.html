@@ -465,7 +465,7 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
           <div><label class="field-label">Current month label</label><input type="text" class="field-input" id="set-month" placeholder="e.g. June 2026" oninput="saveSetting('monthLabel',this.value);updateLabels()"/></div>
         </div>
         <div><label class="field-label">Overage visit price ($)</label><input type="number" class="field-input" id="set-overage" placeholder="25" style="max-width:160px" oninput="saveSetting('overagePrice',this.value)"/></div>
-        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
+        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
       </div>
       <div class="card">
         <div class="settings-title">Twilio SMS</div>
@@ -556,6 +556,7 @@ let subs=JSON.parse(localStorage.getItem('sp_subs')||'[]');
 let passes=JSON.parse(localStorage.getItem('sp_passes')||'[]');
 let queue=JSON.parse(localStorage.getItem('sp_queue')||'[]');
 let settings=JSON.parse(localStorage.getItem('sp_settings')||'{}');
+if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
 let nextPlanId=parseInt(localStorage.getItem('sp_npid')||'1');
 let nextSubId=parseInt(localStorage.getItem('sp_nsid')||'1');
 let nextPassId=parseInt(localStorage.getItem('sp_npassid')||'1');
@@ -1325,13 +1326,13 @@ let pollInterval=null;
 
 function startPolling(){
   if(pollInterval)clearInterval(pollInterval);
-  if(!settings.appsScriptUrl)return;
+  if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
   pollSheetQueue();
   pollInterval=setInterval(pollSheetQueue,30000);
 }
 
 function pollSheetQueue(){
-  if(!settings.appsScriptUrl)return;
+  if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
   const sheetId='1z8V_eABZ1iw-qbVBTxVqDd1yqg3vo_eH-vbf7YgXWvU';
   const csvUrl='https://docs.google.com/spreadsheets/d/'+sheetId+'/export?format=csv&gid=0&t='+Date.now();
   fetch(csvUrl,{cache:'no-store'})
