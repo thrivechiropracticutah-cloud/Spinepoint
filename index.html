@@ -1334,18 +1334,28 @@ function startPolling(){
 function pollSheetQueue(){
   const sheetId='1z8V_eABZ1iw-qbVBTxVqDd1yqg3vo_eH-vbf7YgXWvU';
   const csvUrl='https://docs.google.com/spreadsheets/d/'+sheetId+'/export?format=csv&gid=0&t='+Date.now();
+  console.log('Polling sheet...');
   fetch(csvUrl,{cache:'no-store'})
-    .then(r=>r.text())
+    .then(r=>{
+      console.log('Fetch status:',r.status,'ok:',r.ok,'url:',r.url);
+      return r.text();
+    })
     .then(text=>{
+      console.log('CSV received, length:',text.length,'preview:',text.substring(0,200));
       const rows=parseSheetCSV(text);
-      if(rows.length<2)return;
+      console.log('Parsed rows:',rows.length);
+      if(rows.length<2){console.log('Not enough rows');return;}
       const today=new Date().toISOString().split('T')[0];
+      console.log('Today:',today);
       const todayRows=rows.slice(1).filter(r=>r[0]&&r[0].toString().startsWith(today));
+      console.log('Today rows:',todayRows.length, todayRows);
       const existing=queue.map(q=>q.name.toLowerCase());
+      console.log('Existing queue:',existing);
       let added=0;
       todayRows.forEach(r=>{
         const name=(r[1]||'').trim();
         const visitCount=parseInt(r[3])||1;
+        console.log('Checking name:',name,'exists:',existing.includes(name.toLowerCase()));
         if(name&&!existing.includes(name.toLowerCase())){
           queue.push({
             id:Date.now()+Math.random(),
@@ -1360,11 +1370,17 @@ function pollSheetQueue(){
           added++;
         }
       });
+      console.log('Added:',added);
       if(added>0){
         persist();
         renderKioskQueue();
         renderDashboard();
         showToast(added+' patient'+(added>1?'s':'')+' checked in via QR');
+      }
+    })
+    .catch(err=>console.log('Poll error:',err.message,err));
+}
+
       }
     })
     .catch(err=>console.log('Poll error:',err));
