@@ -1333,55 +1333,40 @@ function startPolling(){
 
 function pollSheetQueue(){
   const APPS_URL='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
-  const cbName='spcb'+Date.now();
-  const s=document.createElement('script');
-  s.src=APPS_URL+'?action=getQueue&callback='+cbName;
-  window[cbName]=function(data){
-    try{
-      if(data&&data.rows&&data.rows.length){
-        const now=new Date();
-        const todayStr=now.toDateString(); // e.g. "Mon Jun 08 2026"
-        const existing=queue.map(q=>q.name.toLowerCase());
-        let added=0;
-        data.rows.forEach(function(r){
-          const name=(r.name||'').trim();
-          const visitCount=parseInt(r.visitCount)||1;
-          // Parse the timestamp — works with both ISO and long date format
-          const rowDate=new Date(r.timestamp||'');
-          const isToday=(!isNaN(rowDate))&&(rowDate.toDateString()===todayStr);
-          if(name&&isToday&&!existing.includes(name.toLowerCase())){
-            queue.push({
-              id:Date.now()+Math.random(),
-              name:name,
-              time:rowDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
-              status:'waiting',
-              initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(),
-              visitCount:visitCount,
-              fromSheet:true
-            });
-            existing.push(name.toLowerCase());
-            added++;
-          }
-        });
-        if(added>0){
-          persist();
-          renderKioskQueue();
-          renderDashboard();
-          showToast(added+' patient'+(added>1?'s':'')+' checked in via QR');
+  fetch(APPS_URL+'?action=getQueue',{method:'GET'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(!data||!data.rows||!data.rows.length)return;
+      const todayStr=new Date().toDateString();
+      const existing=queue.map(function(q){return q.name.toLowerCase();});
+      let added=0;
+      data.rows.forEach(function(r){
+        const name=(r.name||'').trim();
+        const visitCount=parseInt(r.visitCount)||1;
+        const rowDate=new Date(r.timestamp||'');
+        const isToday=!isNaN(rowDate)&&rowDate.toDateString()===todayStr;
+        if(name&&isToday&&!existing.includes(name.toLowerCase())){
+          queue.push({
+            id:Date.now()+Math.random(),
+            name:name,
+            time:rowDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+            status:'waiting',
+            initials:name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase(),
+            visitCount:visitCount,
+            fromSheet:true
+          });
+          existing.push(name.toLowerCase());
+          added++;
         }
+      });
+      if(added>0){
+        persist();
+        renderKioskQueue();
+        renderDashboard();
+        showToast(added+' patient'+(added>1?'s':'')+' checked in via QR');
       }
-    }catch(e){console.log('Queue parse error:',e);}
-    finally{
-      delete window[cbName];
-      if(s.parentNode)s.parentNode.removeChild(s);
-    }
-  };
-  s.onerror=function(){
-    console.log('Script load error');
-    delete window[cbName];
-    if(s.parentNode)s.parentNode.removeChild(s);
-  };
-  document.head.appendChild(s);
+    })
+    .catch(function(e){console.log('Poll error:',e.message);});
 }
 
 
