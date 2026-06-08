@@ -1333,21 +1333,18 @@ function startPolling(){
 
 function pollSheetQueue(){
   if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
-  const sheetId='1z8V_eABZ1iw-qbVBTxVqDd1yqg3vo_eH-vbf7YgXWvU';
-  const csvUrl='https://docs.google.com/spreadsheets/d/'+sheetId+'/export?format=csv&gid=0&t='+Date.now();
-  fetch(csvUrl,{cache:'no-store'})
-    .then(r=>r.text())
-    .then(text=>{
-      const rows=parseSheetCSV(text);
-      if(rows.length<2)return;
+  const cbName='spcb'+Date.now();
+  window[cbName]=function(data){
+    try{
+      if(!data||!data.rows)return;
       const today=new Date().toISOString().split('T')[0];
-      const todayRows=rows.slice(1).filter(r=>r[0]&&r[0].toString().startsWith(today));
       const existing=queue.map(q=>q.name.toLowerCase());
       let added=0;
-      todayRows.forEach(r=>{
-        const name=(r[1]||'').trim();
-        const visitCount=parseInt(r[3])||1;
-        if(name&&!existing.includes(name.toLowerCase())){
+      data.rows.forEach(function(r){
+        const name=(r.name||'').trim();
+        const visitCount=parseInt(r.visitCount)||1;
+        const rowDate=(r.timestamp||'').substring(0,10);
+        if(name&&rowDate===today&&!existing.includes(name.toLowerCase())){
           queue.push({
             id:Date.now()+Math.random(),
             name:name,
@@ -1362,14 +1359,21 @@ function pollSheetQueue(){
         }
       });
       if(added>0){
-        persist();
-        renderKioskQueue();
-        renderDashboard();
+        persist();renderKioskQueue();renderDashboard();
         showToast(added+' patient'+(added>1?'s':'')+' checked in via QR');
       }
-    })
-    .catch(()=>{});
+    }catch(e){}
+    delete window[cbName];
+    const el=document.getElementById(cbName);
+    if(el)el.remove();
+  };
+  const s=document.createElement('script');
+  s.id=cbName;
+  s.src=settings.appsScriptUrl+'?action=getQueue&callback='+cbName;
+  s.onerror=function(){delete window[cbName];s.remove();};
+  document.head.appendChild(s);
 }
+
 
 function parseSheetCSV(text){
   const rows=[];
