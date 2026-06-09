@@ -773,20 +773,25 @@ function stagePatient(subId,action){
   if(!s)return;
   if(action==='active'){
     s.needsPlan=false;
-    showToast(s.groupName+' moved to Active — edit to assign a plan');
   } else if(action==='pass'){
     passes.push({id:nextPassId++,name:s.groupName,primary:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,date:s.since||'',active:true});
     subs=subs.filter(x=>x.id!==subId);
-    showToast(s.groupName+' moved to Punch passes');
   } else if(action==='inactive'){
     s.active=false;
     s.needsPlan=false;
-    showToast(s.groupName+' marked inactive');
   }
-  persist();renderMemberships();renderDashboard();renderAlerts();
+  persist();
+  renderMemberships();
+  try{renderDashboard();}catch(e){console.warn('Dashboard render error:',e);}
+  try{renderAlerts();}catch(e){console.warn('Alerts render error:',e);}
+  const msgs={active:'moved to Active — edit to assign a plan',pass:'moved to Punch passes',inactive:'marked inactive'};
+  if(msgs[action])showToast((s.groupName||'Patient')+' '+msgs[action]);
 }
 
 function renderMemberships(){
+  // Remember which tab is currently visible so re-renders don't reset it
+  const activeTabView=Array.from(document.querySelectorAll('.m-tab-view')).find(v=>v.style.display!=='none');
+  const activeTabId=activeTabView?activeTabView.id:'mview-patients';
   const assigned=subs.filter(s=>s.active&&!s.needsPlan);
   const unassigned=subs.filter(s=>s.active&&s.needsPlan);
   const totalSubs=assigned.length;
@@ -944,6 +949,11 @@ function renderMemberships(){
       </div>`;
     }).join('');
   }
+
+  // Restore whichever tab was visible before re-render
+  document.querySelectorAll('.m-tab-view').forEach(v=>v.style.display='none');
+  const toShow=document.getElementById(activeTabId);
+  if(toShow)toShow.style.display='block';
 }
 
 
@@ -1012,6 +1022,7 @@ function renderAlerts(){
   }
 
   const el=document.getElementById('alertsContent');
+  if(!el)return; // not on alerts page, skip render
   if(!alerts.length){
     el.innerHTML=`<div class="empty-state" style="padding:48px 20px">
       <i class="ti ti-circle-check" style="font-size:32px;display:block;margin-bottom:10px;color:var(--oak)"></i>
@@ -1059,12 +1070,14 @@ function renderDashboard(){
   // needsPlan banner
   const unassigned=subs.filter(s=>s.active&&s.needsPlan);
   const banner=document.getElementById('needsPlanBanner');
-  if(unassigned.length){
-    banner.style.display='flex';
-    document.getElementById('needsPlanCount').textContent=unassigned.length;
-    document.getElementById('needsPlanPlural').textContent=unassigned.length===1?'':'s';
-  } else {
-    banner.style.display='none';
+  if(banner){
+    if(unassigned.length){
+      banner.style.display='flex';
+      document.getElementById('needsPlanCount').textContent=unassigned.length;
+      document.getElementById('needsPlanPlural').textContent=unassigned.length===1?'':'s';
+    } else {
+      banner.style.display='none';
+    }
   }
 
   document.getElementById('d-subs').textContent=totalSubs;
@@ -1555,6 +1568,18 @@ function pollSheetQueue(){
     .catch(function(e){console.log('Poll error:',e.message);});
 }
 
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+let toastTimer=null;
+function showToast(msg,duration){
+  const t=document.getElementById('toast');
+  const m=document.getElementById('toastMsg');
+  if(!t||!m)return;
+  m.textContent=msg;
+  t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),duration||3000);
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────
 window.onload=function(){
