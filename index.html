@@ -30,7 +30,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .page{display:none}.page.active{display:block}
 .page-title{font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:3px}
 .page-sub{font-size:13px;color:var(--text-secondary);margin-bottom:22px}
-.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:22px}
 .metric{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px}
 .metric-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:flex;align-items:center;gap:4px}
 .metric-val{font-size:24px;font-weight:500;color:var(--text-primary);line-height:1}
@@ -151,7 +151,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .stage-btn.pass-btn:hover{background:#eed8a8}
 .stage-btn.inactive-btn{background:#f5ddd8;color:#7a2e1e;border-color:#ddb0a0}
 .stage-btn.inactive-btn:hover{background:#ecc8c0}
-padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margin-bottom:-0.5px}
+.sync-tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margin-bottom:-0.5px}
 .sync-tab:hover{color:var(--text-primary)}
 .sync-tab.active{color:var(--oak);border-bottom-color:var(--oak);font-weight:500}
 .sync-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;margin-bottom:5px;font-size:13px}
@@ -200,6 +200,11 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
       <div class="page-title" id="dash-title">Practice overview</div>
       <div class="page-sub" id="dash-sub">—</div>
       <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Connect your Jane API key in Settings to pull live data. Data you enter here is saved to your browser.</span></div>
+      <div id="needsPlanBanner" style="display:none;background:#f5e6cc;border:0.5px solid #e0c898;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:none;align-items:center;gap:10px">
+        <i class="ti ti-alert-circle" style="font-size:16px;color:#935b38;flex-shrink:0"></i>
+        <div style="flex:1;font-size:13px;color:#5a3010"><span id="needsPlanCount">0</span> imported patient<span id="needsPlanPlural">s</span> need a plan assigned before they appear in revenue metrics.</div>
+        <button class="sm-btn" style="white-space:nowrap" onclick="nav('memberships',document.querySelectorAll('.nav-item')[4]);showMTab('patients',document.getElementById('mtab-patients'))">Review →</button>
+      </div>
       <div class="metrics">
         <div class="metric">
           <div class="metric-label"><i class="ti ti-users" style="font-size:13px"></i> Active subscriptions</div>
@@ -226,6 +231,11 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
           <div class="metric-val" id="d-mrr">$0</div>
           <div class="metric-sub">active subscriptions</div>
         </div>
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-calendar-check" style="font-size:13px"></i> Visits today</div>
+          <div class="metric-val" id="d-visits-today">0</div>
+          <div class="metric-sub" id="d-visits-sub">queue check-ins</div>
+        </div>
       </div>
       <div class="two-col">
         <div class="card">
@@ -247,12 +257,7 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
     <div class="page" id="page-alerts">
       <div class="page-title">Alerts &amp; reminders</div>
       <div class="page-sub">Automated flags that need your attention</div>
-      <div id="alertsContent">
-        <div class="empty-state" style="padding:48px 20px">
-          <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
-          No alerts right now — you're all caught up!
-        </div>
-      </div>
+      <div id="alertsContent"></div>
     </div>
 
     <!-- MEMBERSHIPS -->
@@ -465,16 +470,12 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
 
         </div>
         <div><label class="field-label">Overage visit price ($)</label><input type="number" class="field-input" id="set-overage" placeholder="25" style="max-width:160px" oninput="saveSetting('overagePrice',this.value)"/></div>
-        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
+        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
       </div>
       <div class="card">
-        <div class="settings-title">Twilio SMS</div>
-        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Sign up at twilio.com · ~$1/mo for a number · ~$0.0075 per text</span></div>
-        <div class="inline-row">
-          <div><label class="field-label">Account SID</label><input type="text" class="field-input" id="set-sid" placeholder="ACxxxxxxxxxxxxxxxx" oninput="saveSetting('twilioSid',this.value)"/></div>
-          <div><label class="field-label">Auth Token</label><input type="password" class="field-input" id="set-token" placeholder="••••••••••••" oninput="saveSetting('twilioToken',this.value)"/></div>
-        </div>
-        <div><label class="field-label">Twilio phone number</label><input type="text" class="field-input" id="set-twilio-phone" placeholder="+18015551234" style="max-width:220px" oninput="saveSetting('twilioPhone',this.value)"/></div>
+        <div class="settings-title">SMS (via Apps Script)</div>
+        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-shield-check" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>SMS is sent through your Google Apps Script, which keeps your Twilio credentials securely server-side. Add your Twilio SID, Auth Token, and From number as <strong>Script Properties</strong> in your Apps Script project (<code>TWILIO_SID</code>, <code>TWILIO_TOKEN</code>, <code>TWILIO_FROM</code>). Never paste Twilio credentials directly into this dashboard.</span></div>
+        <a href="https://developers.google.com/apps-script/guides/properties" target="_blank" class="sm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px"><i class="ti ti-external-link" style="font-size:13px"></i> Apps Script Properties docs</a>
       </div>
       <div class="card">
         <div class="settings-title">Jane API</div>
@@ -496,10 +497,12 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
         <label class="field-label">Price per month ($)</label><input type="number" class="field-input" id="pm-price" min="0" placeholder="99"/>
         <label class="field-label">Max members per subscription</label>
         <select class="field-input" id="pm-maxmembers">
-          <option value="1">1 (Individual)</option>
+          <option value="1" selected>1 (Individual / Flex)</option>
           <option value="2">2 (Couple)</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
           <option value="5">Up to 5 (Family)</option>
-          <option value="1" selected>1 (Flex / single visit)</option>
+          <option value="10">Up to 10 (Large family)</option>
         </select>
         <div class="modal-actions"><button class="btn-cancel" onclick="closePlanModal()">Cancel</button><button class="btn-save" onclick="savePlan()">Save plan</button></div>
       </div>
@@ -556,7 +559,6 @@ let subs=JSON.parse(localStorage.getItem('sp_subs')||'[]');
 let passes=JSON.parse(localStorage.getItem('sp_passes')||'[]');
 let queue=JSON.parse(localStorage.getItem('sp_queue')||'[]');
 let settings=JSON.parse(localStorage.getItem('sp_settings')||'{}');
-if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
 let nextPlanId=parseInt(localStorage.getItem('sp_npid')||'1');
 let nextSubId=parseInt(localStorage.getItem('sp_nsid')||'1');
 let nextPassId=parseInt(localStorage.getItem('sp_npassid')||'1');
@@ -581,6 +583,7 @@ function nav(id,el){
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
   closeAllMenus();
+  if(id==='alerts')renderAlerts();
   if(id==='memberships')renderMemberships();
   if(id==='checkin'){renderKioskQueue();refreshQR();}
   if(id==='janesync')renderSyncHistory();
@@ -598,7 +601,7 @@ function updateLabels(){
 }
 
 function loadSettings(){
-  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-overage':'overagePrice','set-sid':'twilioSid','set-token':'twilioToken','set-twilio-phone':'twilioPhone','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
+  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-overage':'overagePrice','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
   Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el&&settings[k]!==undefined)el.value=settings[k];});
 }
 
@@ -643,6 +646,13 @@ function savePlan(){
 }
 function deletePlan(id){
   closeAllMenus();
+  const p=plans.find(x=>x.id===id);
+  if(!p)return;
+  const inUse=subs.filter(s=>s.planId===id).length;
+  const msg=inUse>0
+    ?`Delete "${p.name}"? This plan is used by ${inUse} subscription${inUse>1?'s':''} — they'll show as "No plan" until reassigned.`
+    :`Delete plan "${p.name}"? This cannot be undone.`;
+  if(!confirm(msg))return;
   plans=plans.filter(p=>p.id!==id);
   persist();renderMemberships();renderDashboard();showToast('Plan removed');
 }
@@ -694,6 +704,10 @@ function saveSub(){
   persist();closeSubModal();renderMemberships();renderDashboard();
 }
 function deleteSub(id){
+  const s=subs.find(x=>x.id===id);
+  if(!s)return;
+  const memberCount=1+(s.members||[]).length;
+  if(!confirm(`Remove subscription for "${s.groupName}" (${memberCount} member${memberCount>1?'s':''})? This cannot be undone.`))return;
   subs=subs.filter(s=>s.id!==id);
   persist();renderMemberships();renderDashboard();showToast('Subscription removed');
 }
@@ -733,6 +747,9 @@ function savePass(){
   persist();closePassModal();renderMemberships();renderDashboard();
 }
 function deletePass(id){
+  const p=passes.find(x=>x.id===id);
+  if(!p)return;
+  if(!confirm(`Remove punch pass for "${p.name}"? This cannot be undone.`))return;
   passes=passes.filter(p=>p.id!==id);
   persist();renderMemberships();renderDashboard();showToast('Pass removed');
 }
@@ -766,7 +783,7 @@ function stagePatient(subId,action){
     s.needsPlan=false;
     showToast(s.groupName+' marked inactive');
   }
-  persist();renderMemberships();renderDashboard();
+  persist();renderMemberships();renderDashboard();renderAlerts();
 }
 
 function renderMemberships(){
@@ -930,7 +947,106 @@ function renderMemberships(){
 }
 
 
-// ── RENDER DASHBOARD ──────────────────────────────────────────────────
+// ── RENDER ALERTS ─────────────────────────────────────────────────────
+function renderAlerts(){
+  const alerts=[];
+  const today=new Date();
+
+  // 1. Patients imported without a plan
+  const needsPlan=subs.filter(s=>s.active&&s.needsPlan);
+  if(needsPlan.length){
+    alerts.push({
+      level:'warn',
+      icon:'ti-id-badge',
+      title:needsPlan.length+' patient'+(needsPlan.length>1?'s':'')+' need'+(needsPlan.length===1?'s':'')+' a plan assigned',
+      body:needsPlan.map(s=>s.groupName).join(', '),
+      action:{label:'Go to Patients tab',fn:"nav('memberships',document.querySelector('.nav-item:nth-child(5)'));showMTab('patients',document.getElementById('mtab-patients'))"}
+    });
+  }
+
+  // 2. Punch passes running low (≤ 2 visits)
+  const lowPasses=passes.filter(p=>p.active&&p.visits<=2);
+  if(lowPasses.length){
+    lowPasses.forEach(p=>{
+      alerts.push({
+        level:'warn',
+        icon:'ti-ticket',
+        title:p.name+' — punch pass running low',
+        body:(p.visits===0?'No visits remaining':'Only '+p.visits+' visit'+(p.visits>1?'s':'')+' left')+' · '+( p.phone||'no phone on file'),
+        action:{label:'Edit pass',fn:'openPassModal('+p.id+')'}
+      });
+    });
+  }
+
+  // 3. At-risk members — no check-in in 30+ days (based on queue history)
+  // We track last check-in date on subs when we know it
+  const thirtyDaysAgo=new Date(today);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
+  const activeAssigned=subs.filter(s=>s.active&&!s.needsPlan);
+  activeAssigned.forEach(s=>{
+    if(s.lastVisit){
+      const lv=new Date(s.lastVisit);
+      if(!isNaN(lv)&&lv<thirtyDaysAgo){
+        const daysAgo=Math.floor((today-lv)/(1000*60*60*24));
+        alerts.push({
+          level:'info',
+          icon:'ti-user-exclamation',
+          title:s.groupName+' — no visit in '+daysAgo+' days',
+          body:(s.phone||'no phone on file')+' · last seen '+lv.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+          action:{label:'Send SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}
+        });
+      }
+    }
+  });
+
+  // 4. Subscriptions with no plan (assigned but planId missing)
+  const noPlan=subs.filter(s=>s.active&&!s.needsPlan&&!s.planId);
+  if(noPlan.length){
+    alerts.push({
+      level:'info',
+      icon:'ti-alert-circle',
+      title:noPlan.length+' active subscription'+(noPlan.length>1?'s':'')+' missing a plan',
+      body:noPlan.map(s=>s.groupName).join(', ')+' · edit each to assign a plan',
+      action:{label:'Go to Active tab',fn:"nav('memberships',document.querySelectorAll('.nav-item')[4]);showMTab('active',document.getElementById('mtab-active'))"}
+    });
+  }
+
+  const el=document.getElementById('alertsContent');
+  if(!alerts.length){
+    el.innerHTML=`<div class="empty-state" style="padding:48px 20px">
+      <i class="ti ti-circle-check" style="font-size:32px;display:block;margin-bottom:10px;color:var(--oak)"></i>
+      No alerts right now — you're all caught up!
+    </div>`;
+
+    // Clear alert dot from nav
+    const dot=document.querySelector('.nav-item[onclick*="alerts"] .alert-dot');
+    if(dot)dot.style.display='none';
+    return;
+  }
+
+  // Show alert dot on nav item
+  const navAlerts=document.querySelector('.nav-item[onclick*="alerts"]');
+  if(navAlerts&&!navAlerts.querySelector('.alert-dot')){
+    const dot=document.createElement('span');
+    dot.className='alert-dot';
+    navAlerts.appendChild(dot);
+  }
+
+  const colorMap={warn:{bg:'#fef5f0',border:'#e8b99a',icon:'#935b38'},info:{bg:'#f5f0e8',border:'#dfd3c3',icon:'#62684c'}};
+  el.innerHTML=alerts.map(a=>{
+    const c=colorMap[a.level]||colorMap.info;
+    return `<div style="background:${c.bg};border:0.5px solid ${c.border};border-radius:12px;padding:16px 18px;margin-bottom:12px;display:flex;gap:13px;align-items:flex-start">
+      <i class="ti ${a.icon}" style="font-size:18px;color:${c.icon};flex-shrink:0;margin-top:1px"></i>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:3px">${a.title}</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">${a.body}</div>
+        ${a.action?`<button class="sm-btn" onclick="${a.action.fn}">${a.action.label} →</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+
 function renderDashboard(){
   updateLabels();
   const activeSubs=subs.filter(s=>s.active);
@@ -940,6 +1056,17 @@ function renderDashboard(){
   const passCount=passes.filter(p=>p.active).length;
   const convPct=totalPts>0?Math.round(totalSubs/totalPts*100):0;
 
+  // needsPlan banner
+  const unassigned=subs.filter(s=>s.active&&s.needsPlan);
+  const banner=document.getElementById('needsPlanBanner');
+  if(unassigned.length){
+    banner.style.display='flex';
+    document.getElementById('needsPlanCount').textContent=unassigned.length;
+    document.getElementById('needsPlanPlural').textContent=unassigned.length===1?'':'s';
+  } else {
+    banner.style.display='none';
+  }
+
   document.getElementById('d-subs').textContent=totalSubs;
   document.getElementById('d-pts-sub').textContent='covers '+totalPts+' patient'+(totalPts!==1?'s':'');
   document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
@@ -948,6 +1075,8 @@ function renderDashboard(){
   document.getElementById('conv-pct-label').textContent=convPct+'%';
   document.getElementById('d-conv-sub').textContent=totalPts?totalSubs+' subs · '+totalPts+' patients':'no data yet';
   document.getElementById('conv-arc').style.strokeDashoffset=125.7-(convPct/100*125.7);
+  document.getElementById('d-visits-today').textContent=queue.length;
+  document.getElementById('d-visits-sub').textContent=queue.length===1?'1 check-in today':queue.length+' check-ins today';
 
   const waiting=queue.filter(q=>q.status!=='in');
   document.getElementById('d-queue-badge').textContent=waiting.length+' waiting';
@@ -986,14 +1115,36 @@ function renderKioskQueue(){
   if(!waiting.length){el.innerHTML='<div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div>';}
   else renderQueueItems(el,waiting);
 }
+function decrementPassIfHolder(name){
+  // Find a punch pass where the primary or any member matches the checked-in name
+  const nameLower=name.toLowerCase().trim();
+  const pass=passes.find(p=>p.active&&(
+    (p.primary||p.name).toLowerCase()===nameLower||
+    (p.members||[]).some(m=>m.toLowerCase()===nameLower)
+  ));
+  if(pass&&pass.visits>0){
+    pass.visits--;
+    if(pass.visits===0){
+      showToast(name+' checked in · punch pass now empty — time to renew!');
+    } else if(pass.visits<=2){
+      showToast(name+' checked in · '+pass.visits+' visit'+(pass.visits>1?'s':'')+' remaining on pass');
+    }
+    persist();
+    renderMemberships();
+    return true;
+  }
+  return false;
+}
+
 function kioskCheckIn(){
   const name=document.getElementById('kioskName').value.trim();
   if(!name)return;
   queue.unshift({id:Date.now(),name,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),status:'waiting',initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()});
+  const wasPunchPass=decrementPassIfHolder(name);
   persist();
   document.getElementById('kioskName').value='';
   renderKioskQueue();renderDashboard();
-  showToast(name+' checked in');
+  if(!wasPunchPass)showToast(name+' checked in');
 }
 
 // ── SMS ───────────────────────────────────────────────────────────────
@@ -1034,9 +1185,42 @@ function sendSMS(){
   const msg=document.getElementById('smsBody').value.trim();
   if(!msg){showToast('Please write a message first');return;}
   const tier=document.getElementById('smsTier');
-  shArr.unshift({msg,label:tier.options[tier.selectedIndex].text,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
-  document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
-  showToast('SMS queued — connect Twilio in Settings to send live');
+  const label=tier.options[tier.selectedIndex].text;
+
+  // Build recipient phone list from selected audience
+  const v=tier.value;
+  let recipients=[];
+  if(v==='all'||v==='sub'){
+    recipients=recipients.concat(subs.filter(s=>s.active&&s.phone).map(s=>s.phone));
+  }
+  if(v==='all'||v==='pass'){
+    recipients=recipients.concat(passes.filter(p=>p.active&&p.phone).map(p=>p.phone));
+  }
+  if(v.startsWith('plan-')){
+    const pid=parseInt(v.replace('plan-',''));
+    recipients=subs.filter(s=>s.active&&s.planId===pid&&s.phone).map(s=>s.phone);
+  }
+  recipients=[...new Set(recipients)]; // dedupe
+
+  if(!settings.appsScriptUrl){
+    showToast('Add your Apps Script URL in Settings to send SMS');
+    return;
+  }
+
+  const btn=document.querySelector('#page-sms .primary-btn');
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+
+  fetch(settings.appsScriptUrl,{
+    method:'POST',
+    mode:'no-cors',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'sendSMS',recipients,message:msg})
+  }).finally(()=>{
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Send SMS';}
+    shArr.unshift({msg,label,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),count:recipients.length});
+    document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px;margin-bottom:6px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}${h.count?' · '+h.count+' recipients':''}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
+    showToast('SMS dispatched via Apps Script — check your Sheet for delivery status');
+  });
 }
 
 // ── DROPDOWNS ─────────────────────────────────────────────────────────
@@ -1326,13 +1510,14 @@ let pollInterval=null;
 
 function startPolling(){
   if(pollInterval)clearInterval(pollInterval);
-  if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
+  if(!settings.appsScriptUrl)return; // don't poll if no URL configured
   pollSheetQueue();
   pollInterval=setInterval(pollSheetQueue,30000);
 }
 
 function pollSheetQueue(){
-  const APPS_URL='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
+  const APPS_URL=settings.appsScriptUrl;
+  if(!APPS_URL)return;
   fetch(APPS_URL+'?action=getQueue',{method:'GET'})
     .then(function(r){return r.json();})
     .then(function(data){
@@ -1356,6 +1541,7 @@ function pollSheetQueue(){
             fromSheet:true
           });
           existing.push(name.toLowerCase());
+          decrementPassIfHolder(name);
           added++;
         }
       });
@@ -1372,7 +1558,7 @@ function pollSheetQueue(){
 
 // ── INIT ──────────────────────────────────────────────────────────────
 window.onload=function(){
-  updateLabels();renderDashboard();refreshQR();renderSyncHistory();startPolling();
+  updateLabels();renderDashboard();renderAlerts();refreshQR();renderSyncHistory();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
