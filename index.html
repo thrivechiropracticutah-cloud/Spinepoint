@@ -462,7 +462,7 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
         </div>
         <div class="inline-row">
           <div><label class="field-label">Check-in page URL</label><input type="text" class="field-input" id="set-url" placeholder="yourpractice.com/checkin" oninput="saveSetting('checkinUrl',this.value);refreshQR()"/></div>
-          <div><label class="field-label">Current month label</label><input type="text" class="field-input" id="set-month" placeholder="e.g. June 2026" oninput="saveSetting('monthLabel',this.value);updateLabels()"/></div>
+
         </div>
         <div><label class="field-label">Overage visit price ($)</label><input type="number" class="field-input" id="set-overage" placeholder="25" style="max-width:160px" oninput="saveSetting('overagePrice',this.value)"/></div>
         <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
@@ -590,7 +590,7 @@ function nav(id,el){
 
 function updateLabels(){
   const n=settings.practiceName||'Your Practice';
-  const m=settings.monthLabel||'—';
+  const m=new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
   document.getElementById('sidebar-practice-name').textContent=n;
   document.getElementById('dash-title').textContent=n+' — overview';
   document.getElementById('dash-sub').textContent=m+' · cash-based membership practice';
@@ -598,7 +598,7 @@ function updateLabels(){
 }
 
 function loadSettings(){
-  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-month':'monthLabel','set-overage':'overagePrice','set-sid':'twilioSid','set-token':'twilioToken','set-twilio-phone':'twilioPhone','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
+  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-overage':'overagePrice','set-sid':'twilioSid','set-token':'twilioToken','set-twilio-phone':'twilioPhone','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
   Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el&&settings[k]!==undefined)el.value=settings[k];});
 }
 
