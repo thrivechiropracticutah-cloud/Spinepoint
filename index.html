@@ -357,7 +357,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <button class="print-btn" onclick="printQR()"><i class="ti ti-printer"></i> Print QR code</button>
         </div>
         <div class="card" style="margin-bottom:0">
-          <div class="card-header"><div class="card-title">Live waiting queue</div><span class="badge b-honey" id="queueBadge">0 waiting</span></div>
+          <div class="card-header"><div class="card-title">Live waiting queue</div><span class="badge b-honey" id="queueBadge">0 waiting</span><button class="sm-btn" id="clearQueueBtn" onclick="clearQueue()" style="margin-left:auto;color:#935b38;border-color:#e0c898" title="Archive today's check-ins and reset the queue"><i class="ti ti-archive" style="font-size:12px"></i> Clear queue</button></div>
           <div class="queue-list" id="kioskQueue"><div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div></div>
           <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px">
             <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Manual check-in</div>
@@ -522,6 +522,17 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <label class="field-label">Additional members <span style="color:var(--text-hint);font-weight:400">— one per line</span></label>
         <textarea class="field-input" id="sm-members" placeholder="Sarah Smith&#10;Tommy Smith&#10;Emily Smith" rows="4"></textarea>
         <label class="field-label">Member since</label><input type="date" class="field-input" id="sm-since"/>
+        <div class="inline-row">
+          <div><label class="field-label">Next billing date</label><input type="date" class="field-input" id="sm-billing"/></div>
+          <div><label class="field-label">Payment status</label>
+            <select class="field-input" id="sm-payment">
+              <option value="current">Current</option>
+              <option value="failed">Failed / declined</option>
+              <option value="overdue">Overdue</option>
+              <option value="paused">Paused</option>
+            </select>
+          </div>
+        </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="closeSubModal()">Cancel</button><button class="btn-save" onclick="saveSub()">Save subscription</button></div>
       </div>
     </div>
@@ -671,9 +682,12 @@ function openSubModal(id){
     document.getElementById('sm-phone').value=s.phone||'';
     document.getElementById('sm-members').value=(s.members||[]).join('\n');
     document.getElementById('sm-since').value=s.since||'';
+    document.getElementById('sm-billing').value=s.billingDate||'';
+    document.getElementById('sm-payment').value=s.paymentStatus||'current';
     planSel.value=s.planId||'';
   } else {
-    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-since'].forEach(id=>document.getElementById(id).value='');
+    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-since','sm-billing'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('sm-payment').value='current';
   }
   planSel.onchange=function(){
     const p=plans.find(x=>x.id===+this.value);
@@ -693,12 +707,14 @@ function saveSub(){
   const membersRaw=document.getElementById('sm-members').value;
   const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
   const since=document.getElementById('sm-since').value;
+  const billingDate=document.getElementById('sm-billing').value;
+  const paymentStatus=document.getElementById('sm-payment').value;
   if(id){
     const s=subs.find(x=>x.id===+id);
-    if(s)Object.assign(s,{groupName,planId,fee,primary,phone,members,since});
+    if(s)Object.assign(s,{groupName,planId,fee,primary,phone,members,since,billingDate,paymentStatus});
     showToast(groupName+' updated');
   } else {
-    subs.push({id:nextSubId++,groupName,planId,fee,primary,phone,members,since,active:true});
+    subs.push({id:nextSubId++,groupName,planId,fee,primary,phone,members,since,billingDate,paymentStatus,active:true});
     showToast(groupName+' added');
   }
   persist();closeSubModal();renderMemberships();renderDashboard();
@@ -957,101 +973,160 @@ function renderMemberships(){
 }
 
 
+// ── DISMISSED ALERTS ──────────────────────────────────────────────────
+let dismissedAlerts=JSON.parse(localStorage.getItem('sp_dismissed_alerts')||'[]');
+function dismissAlert(key){
+  if(!dismissedAlerts.includes(key))dismissedAlerts.push(key);
+  localStorage.setItem('sp_dismissed_alerts',JSON.stringify(dismissedAlerts));
+  renderAlerts();
+}
+function dismissAllAlerts(){
+  if(!confirm('Dismiss all dismissable alerts? They\'ll reappear if the underlying issue isn\'t resolved.'))return;
+  const el=document.getElementById('alertsContent');
+  if(el)Array.from(el.querySelectorAll('[data-alert-key]')).forEach(e=>{
+    if(!dismissedAlerts.includes(e.dataset.alertKey))dismissedAlerts.push(e.dataset.alertKey);
+  });
+  localStorage.setItem('sp_dismissed_alerts',JSON.stringify(dismissedAlerts));
+  renderAlerts();
+}
+
 // ── RENDER ALERTS ─────────────────────────────────────────────────────
 function renderAlerts(){
-  const alerts=[];
+  const allAlerts=[];
   const today=new Date();
+  const thirtyDaysAgo=new Date(today); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
+  const sixtyDaysAgo=new Date(today);  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate()-60);
+  const sevenDaysFromNow=new Date(today); sevenDaysFromNow.setDate(sevenDaysFromNow.getDate()+7);
 
-  // 1. Patients imported without a plan
+  // 1. Patients needing a plan (undismissable)
   const needsPlan=subs.filter(s=>s.active&&s.needsPlan);
-  if(needsPlan.length){
-    alerts.push({
-      level:'warn',
-      icon:'ti-id-badge',
-      title:needsPlan.length+' patient'+(needsPlan.length>1?'s':'')+' need'+(needsPlan.length===1?'s':'')+' a plan assigned',
-      body:needsPlan.map(s=>s.groupName).join(', '),
-      action:{label:'Go to Patients tab',fn:"nav('memberships',document.querySelector('.nav-item:nth-child(5)'));showMTab('patients',document.getElementById('mtab-patients'))"}
-    });
-  }
+  if(needsPlan.length) allAlerts.push({key:'needs-plan',level:'error',icon:'ti-id-badge',dismissable:false,
+    title:needsPlan.length+' patient'+(needsPlan.length>1?'s':'')+' need'+(needsPlan.length===1?'s':'')+' a plan assigned',
+    body:needsPlan.map(s=>s.groupName).join(', '),
+    action:{label:'Go to Patients tab',fn:"nav('memberships',document.querySelector('.nav-item:nth-child(5)'));showMTab('patients',document.getElementById('mtab-patients'))"}});
 
-  // 2. Punch passes running low (≤ 2 visits)
-  const lowPasses=passes.filter(p=>p.active&&p.visits<=2);
-  if(lowPasses.length){
-    lowPasses.forEach(p=>{
-      alerts.push({
-        level:'warn',
-        icon:'ti-ticket',
-        title:p.name+' — punch pass running low',
-        body:(p.visits===0?'No visits remaining':'Only '+p.visits+' visit'+(p.visits>1?'s':'')+' left')+' · '+( p.phone||'no phone on file'),
-        action:{label:'Edit pass',fn:'openPassModal('+p.id+')'}
-      });
-    });
-  }
+  // 2. Failed / overdue payments (undismissable)
+  subs.filter(s=>s.active&&(s.paymentStatus==='failed'||s.paymentStatus==='overdue')).forEach(s=>{
+    allAlerts.push({key:'payment-'+s.id,level:'error',icon:'ti-credit-card-off',dismissable:false,
+      title:s.groupName+' — payment '+(s.paymentStatus==='failed'?'declined':'overdue'),
+      body:(s.phone||'no phone on file')+' · $'+s.fee+'/mo'+(s.billingDate?' · billing date '+new Date(s.billingDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}):''),
+      action:{label:'Edit subscription',fn:'openSubModal('+s.id+')'}});
+  });
 
-  // 3. At-risk members — no check-in in 30+ days (based on queue history)
-  // We track last check-in date on subs when we know it
-  const thirtyDaysAgo=new Date(today);
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
-  const activeAssigned=subs.filter(s=>s.active&&!s.needsPlan);
-  activeAssigned.forEach(s=>{
-    if(s.lastVisit){
-      const lv=new Date(s.lastVisit);
-      if(!isNaN(lv)&&lv<thirtyDaysAgo){
-        const daysAgo=Math.floor((today-lv)/(1000*60*60*24));
-        alerts.push({
-          level:'info',
-          icon:'ti-user-exclamation',
-          title:s.groupName+' — no visit in '+daysAgo+' days',
-          body:(s.phone||'no phone on file')+' · last seen '+lv.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
-          action:{label:'Send SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}
-        });
-      }
+  // 3. Active subscriptions missing a plan (undismissable)
+  const noPlan=subs.filter(s=>s.active&&!s.needsPlan&&!s.planId);
+  if(noPlan.length) allAlerts.push({key:'no-plan-assigned',level:'error',icon:'ti-alert-circle',dismissable:false,
+    title:noPlan.length+' active subscription'+(noPlan.length!==1?'s':'')+' missing a plan',
+    body:noPlan.map(s=>s.groupName).join(', ')+' — edit each to assign a plan',
+    action:{label:'Go to Active tab',fn:"nav('memberships',document.querySelectorAll('.nav-item')[4]);showMTab('active',document.getElementById('mtab-active'))"}});
+
+  // 4. Billing coming up in next 7 days
+  subs.filter(s=>s.active&&s.billingDate&&s.paymentStatus==='current').forEach(s=>{
+    const bd=new Date(s.billingDate);
+    if(!isNaN(bd)&&bd>=today&&bd<=sevenDaysFromNow){
+      const days=Math.ceil((bd-today)/(1000*60*60*24));
+      allAlerts.push({key:'billing-soon-'+s.id+'-'+s.billingDate,level:'warn',icon:'ti-calendar-dollar',dismissable:true,
+        title:s.groupName+' — billing in '+days+' day'+(days!==1?'s':''),
+        body:'$'+s.fee+'/mo · '+(s.phone||'no phone on file')+' · '+bd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
+        action:{label:'Edit subscription',fn:'openSubModal('+s.id+')'}});
     }
   });
 
-  // 4. Subscriptions with no plan (assigned but planId missing)
-  const noPlan=subs.filter(s=>s.active&&!s.needsPlan&&!s.planId);
-  if(noPlan.length){
-    alerts.push({
-      level:'info',
-      icon:'ti-alert-circle',
-      title:noPlan.length+' active subscription'+(noPlan.length>1?'s':'')+' missing a plan',
-      body:noPlan.map(s=>s.groupName).join(', ')+' · edit each to assign a plan',
-      action:{label:'Go to Active tab',fn:"nav('memberships',document.querySelectorAll('.nav-item')[4]);showMTab('active',document.getElementById('mtab-active'))"}
-    });
+  // 5. Punch passes running low (≤ 2 visits)
+  passes.filter(p=>p.active&&p.visits<=2).forEach(p=>{
+    allAlerts.push({key:'low-pass-'+p.id+'-'+p.visits,level:'warn',icon:'ti-ticket',dismissable:true,
+      title:p.name+' — punch pass '+(p.visits===0?'empty':'running low'),
+      body:(p.visits===0?'No visits remaining':'Only '+p.visits+' visit'+(p.visits!==1?'s':'')+' left')+' · '+(p.phone||'no phone on file'),
+      action:{label:'Renew pass',fn:'openPassModal('+p.id+')'}});
+  });
+
+  // 6. New members in first 30 days
+  subs.filter(s=>s.active&&s.since).forEach(s=>{
+    const since=new Date(s.since);
+    if(!isNaN(since)&&since>=thirtyDaysAgo&&since<=today){
+      const daysIn=Math.floor((today-since)/(1000*60*60*24));
+      allAlerts.push({key:'new-member-'+s.id,level:'info',icon:'ti-user-plus',dismissable:true,
+        title:s.groupName+' — new member (day '+daysIn+')',
+        body:'Joined '+since.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · first 30 days are highest churn risk · '+(s.phone||'no phone on file'),
+        action:{label:'Send welcome SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}});
+    }
+  });
+
+  // 7. At-risk members — no visit in 30+ days
+  subs.filter(s=>s.active&&!s.needsPlan&&s.lastVisit).forEach(s=>{
+    const lv=new Date(s.lastVisit);
+    if(!isNaN(lv)&&lv<thirtyDaysAgo){
+      const daysAgo=Math.floor((today-lv)/(1000*60*60*24));
+      allAlerts.push({key:'at-risk-'+s.id+'-'+s.lastVisit,level:lv<sixtyDaysAgo?'warn':'info',icon:'ti-user-exclamation',dismissable:true,
+        title:s.groupName+' — no visit in '+daysAgo+' days'+(lv<sixtyDaysAgo?' ⚠':''),
+        body:'Last seen '+lv.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' · '+(s.phone||'no phone on file'),
+        action:{label:'Send check-in SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}});
+    }
+  });
+
+  // 8. Punch passes unused for 60+ days
+  passes.filter(p=>p.active&&p.visits>0&&p.date).forEach(p=>{
+    const pd=new Date(p.date);
+    if(!isNaN(pd)&&pd<sixtyDaysAgo){
+      const daysAgo=Math.floor((today-pd)/(1000*60*60*24));
+      allAlerts.push({key:'stale-pass-'+p.id,level:'info',icon:'ti-clock-pause',dismissable:true,
+        title:p.name+' — punch pass unused for '+daysAgo+' days',
+        body:p.visits+' visit'+(p.visits!==1?'s':'')+' remaining · purchased '+pd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' · '+(p.phone||'no phone on file'),
+        action:{label:'Send reminder SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}});
+    }
+  });
+
+  // Filter dismissed
+  const visible=allAlerts.filter(a=>!dismissedAlerts.includes(a.key));
+  const urgentCount=visible.filter(a=>a.level==='error'||a.level==='warn').length;
+
+  // Nav dot
+  const navAlerts=document.querySelector('.nav-item[onclick*="alerts"]');
+  if(navAlerts){
+    let dot=navAlerts.querySelector('.alert-dot');
+    if(urgentCount>0){
+      if(!dot){dot=document.createElement('span');dot.className='alert-dot';navAlerts.appendChild(dot);}
+      dot.style.display='';
+    } else if(dot) dot.style.display='none';
   }
 
   const el=document.getElementById('alertsContent');
-  if(!el)return; // not on alerts page, skip render
-  if(!alerts.length){
+  if(!el)return;
+
+  if(!visible.length){
+    const nDismissed=allAlerts.length;
     el.innerHTML=`<div class="empty-state" style="padding:48px 20px">
       <i class="ti ti-circle-check" style="font-size:32px;display:block;margin-bottom:10px;color:var(--oak)"></i>
-      No alerts right now — you're all caught up!
+      <div>No alerts right now — you're all caught up!</div>
+      ${nDismissed?`<button class="sm-btn" style="margin-top:16px" onclick="dismissedAlerts=[];localStorage.removeItem('sp_dismissed_alerts');renderAlerts()">Restore ${nDismissed} dismissed alert${nDismissed!==1?'s':''}</button>`:''}
     </div>`;
-
-    // Clear alert dot from nav
-    const dot=document.querySelector('.nav-item[onclick*="alerts"] .alert-dot');
-    if(dot)dot.style.display='none';
     return;
   }
 
-  // Show alert dot on nav item
-  const navAlerts=document.querySelector('.nav-item[onclick*="alerts"]');
-  if(navAlerts&&!navAlerts.querySelector('.alert-dot')){
-    const dot=document.createElement('span');
-    dot.className='alert-dot';
-    navAlerts.appendChild(dot);
-  }
+  const colorMap={
+    error:{bg:'#fdf0ee',border:'#e8b0a8',icon:'#a03020',badgeLabel:'Action needed'},
+    warn: {bg:'#fef5f0',border:'#e8b99a',icon:'#935b38',badgeLabel:'Attention'},
+    info: {bg:'#f5f0e8',border:'#dfd3c3',icon:'#62684c',badgeLabel:'Info'}
+  };
+  const dismissableCount=visible.filter(a=>a.dismissable).length;
 
-  const colorMap={warn:{bg:'#fef5f0',border:'#e8b99a',icon:'#935b38'},info:{bg:'#f5f0e8',border:'#dfd3c3',icon:'#62684c'}};
-  el.innerHTML=alerts.map(a=>{
+  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div style="font-size:13px;color:var(--text-secondary)">${visible.length} alert${visible.length!==1?'s':''} · ${urgentCount} need${urgentCount!==1?'':'s'} attention</div>
+    ${dismissableCount>1?`<button class="sm-btn" onclick="dismissAllAlerts()">Dismiss all</button>`:''}
+  </div>`+visible.map(a=>{
     const c=colorMap[a.level]||colorMap.info;
-    return `<div style="background:${c.bg};border:0.5px solid ${c.border};border-radius:12px;padding:16px 18px;margin-bottom:12px;display:flex;gap:13px;align-items:flex-start">
-      <i class="ti ${a.icon}" style="font-size:18px;color:${c.icon};flex-shrink:0;margin-top:1px"></i>
+    return `<div data-alert-key="${a.key}" style="background:${c.bg};border:0.5px solid ${c.border};border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;gap:13px;align-items:flex-start">
+      <i class="ti ${a.icon}" style="font-size:18px;color:${c.icon};flex-shrink:0;margin-top:2px"></i>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:500;color:var(--text-primary);margin-bottom:3px">${a.title}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap">
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${a.title}</div>
+          <span style="font-size:10px;font-weight:600;color:${c.icon};background:${c.bg};border:0.5px solid ${c.border};border-radius:20px;padding:1px 7px;white-space:nowrap">${c.badgeLabel}</span>
+        </div>
         <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">${a.body}</div>
-        ${a.action?`<button class="sm-btn" onclick="${a.action.fn}">${a.action.label} →</button>`:''}
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${a.action?`<button class="sm-btn" onclick="${a.action.fn}">${a.action.label} →</button>`:''}
+          ${a.dismissable?`<button class="sm-btn" style="color:var(--text-hint);border-color:var(--border)" onclick="dismissAlert('${a.key}')">Dismiss</button>`:''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1521,6 +1596,42 @@ function resetSync(){
 // ── GOOGLE SHEET QUEUE POLLING ────────────────────────────────────────
 let pollInterval=null;
 
+// ── CLEAR QUEUE ───────────────────────────────────────────────────────
+function clearQueue(){
+  if(!confirm('Archive today\'s check-ins and clear the queue? This cannot be undone.'))return;
+  const btn=document.getElementById('clearQueueBtn');
+  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader" style="font-size:12px"></i> Clearing…';}
+
+  const finish=(success,msg)=>{
+    // Always clear the local queue regardless of sheet response
+    queue=[];
+    persist();
+    renderKioskQueue();
+    renderDashboard();
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-archive" style="font-size:12px"></i> Clear queue';}
+    showToast(msg);
+  };
+
+  if(!settings.appsScriptUrl){
+    // No Apps Script connected — just clear local queue
+    finish(true,'Queue cleared locally (connect Apps Script to also archive the sheet)');
+    return;
+  }
+
+  fetch(settings.appsScriptUrl,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'clearQueue'})
+  })
+  .then(r=>r.json())
+  .then(data=>{
+    finish(true, data.ok ? 'Queue cleared and archived to History sheet' : 'Queue cleared locally (sheet error: '+(data.error||'unknown')+')');
+  })
+  .catch(()=>{
+    finish(false,'Queue cleared locally — could not reach sheet');
+  });
+}
+
 function startPolling(){
   if(pollInterval)clearInterval(pollInterval);
   if(!settings.appsScriptUrl)return; // don't poll if no URL configured
@@ -1583,7 +1694,7 @@ function showToast(msg,duration){
 
 // ── INIT ──────────────────────────────────────────────────────────────
 window.onload=function(){
-  updateLabels();renderDashboard();renderAlerts();refreshQR();renderSyncHistory();startPolling();
+  loadSettings();updateLabels();renderDashboard();renderAlerts();refreshQR();renderSyncHistory();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
