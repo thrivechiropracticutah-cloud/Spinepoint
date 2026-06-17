@@ -1303,7 +1303,7 @@ function handleFileSelect(input){
 
 function processCSV(file){
   const reader=new FileReader();
-  reader.onload=function(e){
+  reader.onload=async function(e){
     try{
       const text=e.target.result;
       const rows=parseCSV(text);
@@ -1331,7 +1331,7 @@ function processCSV(file){
       };
 
       // Parse each data row
-      const patients=rows.slice(1).map(r=>{
+      const rawPatients=rows.slice(1).map(r=>{
         const get=(name)=>{const i=col(name);return i>=0?(r[i]||'').trim():''};
         const firstName=get('first_name');
         const lastName=get('last_name');
@@ -1349,24 +1349,41 @@ function processCSV(file){
         return{firstName,lastName,preferred,displayName,phone,email,memberSince,firstVisit,lastVisit,isActive,guid};
       }).filter(Boolean);
 
+      // De-duplicate WITHIN the CSV itself (Jane sometimes exports a patient more than once)
+      const seenInFile=new Set();
+      const patients=rawPatients.filter(p=>{
+        const key=p.displayName.toLowerCase().replace(/\s+/g,'');
+        if(seenInFile.has(key))return false;
+        seenInFile.add(key);
+        return true;
+      });
+
+      // Refresh against the LIVE database, not just in-memory state,
+      // so two syncs in a row (even fast ones) never create duplicates.
+      showToast('Checking against existing patients…');
+      const[freshSubsR,freshPassesR]=await Promise.all([
+        sb.from('subscriptions').select('*'),
+        sb.from('punch_passes').select('*')
+      ]);
+      const freshSubs=(freshSubsR.data||[]).map(dbSubToApp);
+      const freshPasses=(freshPassesR.data||[]).map(dbPassToApp);
+
       // Categorise each row
       const newPts=[],updates=[],inactivePts=[],skipped=[];
 
       patients.forEach(jp=>{
         if(!jp.isActive){inactivePts.push(jp);return;}
-        // Try to find a match in existing subs by name
-        const nameMatch=(n)=>n.toLowerCase().replace(/\s+/g,'')===jp.displayName.toLowerCase().replace(/\s+/g,'');
-        const existingSub=subs.find(s=>
-          nameMatch(s.primary)||
+        const nameMatch=(n)=>(n||'').toLowerCase().replace(/\s+/g,'')===jp.displayName.toLowerCase().replace(/\s+/g,'');
+        const existingSub=freshSubs.find(s=>
+          nameMatch(s.primary)||nameMatch(s.groupName)||
           (s.members||[]).some(m=>nameMatch(m))
         );
-        const existingPass=passes.find(p=>nameMatch(p.primary||p.name)||(p.members||[]).some(m=>nameMatch(m)));
+        const existingPass=freshPasses.find(p=>nameMatch(p.primary)||nameMatch(p.name)||(p.members||[]).some(m=>nameMatch(m)));
         const exists=existingSub||existingPass;
 
         if(!exists){
           newPts.push(jp);
         } else {
-          // Check if phone or email changed
           const currentPhone=existingSub?existingSub.phone:existingPass?existingPass.phone:'';
           if(jp.phone&&jp.phone!==currentPhone){
             updates.push({...jp,oldPhone:currentPhone,sub:existingSub,pass:existingPass});
@@ -1493,6 +1510,9 @@ function toSafeDate(val){
 
 async function confirmSync(){
   if(!pendingSync)return;
+  const btn=document.getElementById('confirmSyncBtn');
+  if(btn&&btn.disabled)return; // prevent double-click double-insert
+  if(btn){btn.disabled=true;btn.textContent='Syncing…';}
   const{newPts,updates}=pendingSync;
 
   try{
@@ -1551,6 +1571,7 @@ async function confirmSync(){
   }catch(err){
     console.log('Sync error:',err);
     showToast('Sync failed — check connection and try again');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Confirm sync';}
   }
 }
 
@@ -1559,6 +1580,8 @@ function resetSync(){
   document.getElementById('syncPreview').style.display='none';
   document.getElementById('dropZoneCard').style.display='block';
   document.getElementById('csvFileInput').value='';
+  const btn=document.getElementById('confirmSyncBtn');
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Confirm sync';}
 }
 
 // ── END JANE CSV SYNC ─────────────────────────────────────────────────
