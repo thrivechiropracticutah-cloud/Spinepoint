@@ -30,7 +30,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .page{display:none}.page.active{display:block}
 .page-title{font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:3px}
 .page-sub{font-size:13px;color:var(--text-secondary);margin-bottom:22px}
-.metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}
 .metric{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px}
 .metric-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:flex;align-items:center;gap:4px}
 .metric-val{font-size:24px;font-weight:500;color:var(--text-primary);line-height:1}
@@ -151,7 +151,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .stage-btn.pass-btn:hover{background:#eed8a8}
 .stage-btn.inactive-btn{background:#f5ddd8;color:#7a2e1e;border-color:#ddb0a0}
 .stage-btn.inactive-btn:hover{background:#ecc8c0}
-.sync-tab{background:none;border:none;border-bottom:2px solid transparent;padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margin-bottom:-0.5px}
+padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margin-bottom:-0.5px}
 .sync-tab:hover{color:var(--text-primary)}
 .sync-tab.active{color:var(--oak);border-bottom-color:var(--oak);font-weight:500}
 .sync-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;margin-bottom:5px;font-size:13px}
@@ -200,11 +200,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
       <div class="page-title" id="dash-title">Practice overview</div>
       <div class="page-sub" id="dash-sub">—</div>
       <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Connect your Jane API key in Settings to pull live data. Data you enter here is saved to your browser.</span></div>
-      <div id="needsPlanBanner" style="display:none;background:#f5e6cc;border:0.5px solid #e0c898;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:none;align-items:center;gap:10px">
-        <i class="ti ti-alert-circle" style="font-size:16px;color:#935b38;flex-shrink:0"></i>
-        <div style="flex:1;font-size:13px;color:#5a3010"><span id="needsPlanCount">0</span> imported patient<span id="needsPlanPlural">s</span> need a plan assigned before they appear in revenue metrics.</div>
-        <button class="sm-btn" style="white-space:nowrap" onclick="nav('memberships',document.querySelectorAll('.nav-item')[4]);showMTab('patients',document.getElementById('mtab-patients'))">Review →</button>
-      </div>
       <div class="metrics">
         <div class="metric">
           <div class="metric-label"><i class="ti ti-users" style="font-size:13px"></i> Active subscriptions</div>
@@ -231,11 +226,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <div class="metric-val" id="d-mrr">$0</div>
           <div class="metric-sub">active subscriptions</div>
         </div>
-        <div class="metric">
-          <div class="metric-label"><i class="ti ti-calendar-check" style="font-size:13px"></i> Visits today</div>
-          <div class="metric-val" id="d-visits-today">0</div>
-          <div class="metric-sub" id="d-visits-sub">queue check-ins</div>
-        </div>
       </div>
       <div class="two-col">
         <div class="card">
@@ -257,7 +247,12 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
     <div class="page" id="page-alerts">
       <div class="page-title">Alerts &amp; reminders</div>
       <div class="page-sub">Automated flags that need your attention</div>
-      <div id="alertsContent"></div>
+      <div id="alertsContent">
+        <div class="empty-state" style="padding:48px 20px">
+          <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
+          No alerts right now — you're all caught up!
+        </div>
+      </div>
     </div>
 
     <!-- MEMBERSHIPS -->
@@ -357,7 +352,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           <button class="print-btn" onclick="printQR()"><i class="ti ti-printer"></i> Print QR code</button>
         </div>
         <div class="card" style="margin-bottom:0">
-          <div class="card-header"><div class="card-title">Live waiting queue</div><span class="badge b-honey" id="queueBadge">0 waiting</span><button class="sm-btn" id="clearQueueBtn" onclick="clearQueue()" style="margin-left:auto;color:#935b38;border-color:#e0c898" title="Archive today's check-ins and reset the queue"><i class="ti ti-archive" style="font-size:12px"></i> Clear queue</button></div>
+          <div class="card-header"><div class="card-title">Live waiting queue</div><span class="badge b-honey" id="queueBadge">0 waiting</span></div>
           <div class="queue-list" id="kioskQueue"><div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div></div>
           <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px">
             <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Manual check-in</div>
@@ -390,7 +385,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
           </div>
           <div style="margin-bottom:13px"><label class="field-label">Message <span id="charCount" style="font-weight:400">(0/160)</span></label><textarea id="smsBody" placeholder="Type your message…" oninput="updateChar(this)" class="sms-textarea"></textarea></div>
           <div style="font-size:12px;color:var(--oak);font-weight:500;margin-bottom:10px" id="recipientLine">—</div>
-          <button class="primary-btn" onclick="sendSMS()"><i class="ti ti-send"></i> Send SMS</button>
+          <button class="primary-btn" id="sendSmsBtn" onclick="sendSMS()"><i class="ti ti-send"></i> Send SMS</button>
         </div>
         <div class="card">
           <div class="card-title" style="margin-bottom:12px">Message preview</div>
@@ -470,12 +465,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
         </div>
         <div><label class="field-label">Overage visit price ($)</label><input type="number" class="field-input" id="set-overage" placeholder="25" style="max-width:160px" oninput="saveSetting('overagePrice',this.value)"/></div>
-        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
+        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
       </div>
       <div class="card">
-        <div class="settings-title">SMS (via Apps Script)</div>
-        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-shield-check" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>SMS is sent through your Google Apps Script, which keeps your Twilio credentials securely server-side. Add your Twilio SID, Auth Token, and From number as <strong>Script Properties</strong> in your Apps Script project (<code>TWILIO_SID</code>, <code>TWILIO_TOKEN</code>, <code>TWILIO_FROM</code>). Never paste Twilio credentials directly into this dashboard.</span></div>
-        <a href="https://developers.google.com/apps-script/guides/properties" target="_blank" class="sm-btn" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px"><i class="ti ti-external-link" style="font-size:13px"></i> Apps Script Properties docs</a>
+        <div class="settings-title">Twilio SMS</div>
+        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Sign up at twilio.com · ~$1/mo for a number · ~$0.0075 per text</span></div>
+        <div class="inline-row">
+          <div><label class="field-label">Account SID</label><input type="text" class="field-input" id="set-sid" placeholder="ACxxxxxxxxxxxxxxxx" oninput="saveSetting('twilioSid',this.value)"/></div>
+          <div><label class="field-label">Auth Token</label><input type="password" class="field-input" id="set-token" placeholder="••••••••••••" oninput="saveSetting('twilioToken',this.value)"/></div>
+        </div>
+        <div><label class="field-label">Twilio phone number</label><input type="text" class="field-input" id="set-twilio-phone" placeholder="+18015551234" style="max-width:220px" oninput="saveSetting('twilioPhone',this.value)"/></div>
       </div>
       <div class="card">
         <div class="settings-title">Jane API</div>
@@ -497,12 +496,10 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <label class="field-label">Price per month ($)</label><input type="number" class="field-input" id="pm-price" min="0" placeholder="99"/>
         <label class="field-label">Max members per subscription</label>
         <select class="field-input" id="pm-maxmembers">
-          <option value="1" selected>1 (Individual / Flex)</option>
+          <option value="1">1 (Individual)</option>
           <option value="2">2 (Couple)</option>
-          <option value="3">3</option>
-          <option value="4">4</option>
           <option value="5">Up to 5 (Family)</option>
-          <option value="10">Up to 10 (Large family)</option>
+          <option value="1" selected>1 (Flex / single visit)</option>
         </select>
         <div class="modal-actions"><button class="btn-cancel" onclick="closePlanModal()">Cancel</button><button class="btn-save" onclick="savePlan()">Save plan</button></div>
       </div>
@@ -522,17 +519,6 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
         <label class="field-label">Additional members <span style="color:var(--text-hint);font-weight:400">— one per line</span></label>
         <textarea class="field-input" id="sm-members" placeholder="Sarah Smith&#10;Tommy Smith&#10;Emily Smith" rows="4"></textarea>
         <label class="field-label">Member since</label><input type="date" class="field-input" id="sm-since"/>
-        <div class="inline-row">
-          <div><label class="field-label">Next billing date</label><input type="date" class="field-input" id="sm-billing"/></div>
-          <div><label class="field-label">Payment status</label>
-            <select class="field-input" id="sm-payment">
-              <option value="current">Current</option>
-              <option value="failed">Failed / declined</option>
-              <option value="overdue">Overdue</option>
-              <option value="paused">Paused</option>
-            </select>
-          </div>
-        </div>
         <div class="modal-actions"><button class="btn-cancel" onclick="closeSubModal()">Cancel</button><button class="btn-save" onclick="saveSub()">Save subscription</button></div>
       </div>
     </div>
@@ -560,33 +546,70 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const PCOLS=['#62684c','#d2985a','#935b38','#acad96','#d0b59e','#4e513b','#7a8c5e','#c4894a'];
 const PBGS=['#e8ece0','#f5e6cc','#f0e0d4','#eaebe3','#f5e8dc','#d8dbd0','#edf0e5','#faebd7'];
 const PTXT=['#3a3f28','#6b3f0e','#5a2e12','#3a3c28','#5a3a20','#2c2e1c','#3a4a28','#5a3a10'];
 
-let plans=JSON.parse(localStorage.getItem('sp_plans')||'[]');
-let subs=JSON.parse(localStorage.getItem('sp_subs')||'[]');
-let passes=JSON.parse(localStorage.getItem('sp_passes')||'[]');
-let queue=JSON.parse(localStorage.getItem('sp_queue')||'[]');
-let settings=JSON.parse(localStorage.getItem('sp_settings')||'{}');
-let nextPlanId=parseInt(localStorage.getItem('sp_npid')||'1');
-let nextSubId=parseInt(localStorage.getItem('sp_nsid')||'1');
-let nextPassId=parseInt(localStorage.getItem('sp_npassid')||'1');
+const SUPABASE_URL='https://eawvjsmnmagshcgaciwb.supabase.co';
+const SUPABASE_KEY='sb_publishable_mI_1YVRrWTBzJnt3rdB6vA_ZO6W3K5A';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let plans=[];
+let subs=[];
+let passes=[];
+let queue=[];
+let settings={appsScriptUrl:'https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec'};
 let sendHistory=[];
 let pieChart=null,mrrChart=null;
+let dataReady=false;
 
-function persist(){
-  localStorage.setItem('sp_plans',JSON.stringify(plans));
-  localStorage.setItem('sp_subs',JSON.stringify(subs));
-  localStorage.setItem('sp_passes',JSON.stringify(passes));
-  localStorage.setItem('sp_queue',JSON.stringify(queue));
-  localStorage.setItem('sp_settings',JSON.stringify(settings));
-  localStorage.setItem('sp_npid',nextPlanId);
-  localStorage.setItem('sp_nsid',nextSubId);
-  localStorage.setItem('sp_npassid',nextPassId);
+// ── Map DB rows (snake_case) <-> app objects (camelCase) ──────────────
+function dbPlanToApp(r){return {id:r.id,name:r.name,price:Number(r.price),maxMembers:r.max_members};}
+function dbSubToApp(r){return {id:r.id,groupName:r.group_name,planId:r.plan_id,fee:Number(r.fee),primary:r.primary_holder,phone:r.phone,members:r.members||[],since:r.since,active:r.active,needsPlan:r.needs_plan};}
+function dbPassToApp(r){return {id:r.id,name:r.name,primary:r.primary_holder,phone:r.phone,members:r.members||[],visits:r.visits,date:r.purchase_date,active:r.active};}
+function dbQueueToApp(r){return {id:r.id,name:r.name,time:r.time_label,status:r.status,visitCount:r.visit_count};}
+function dbSettingsToApp(r){return {practiceName:r.practice_name,phone:r.phone,checkinUrl:r.checkin_url,overagePrice:r.overage_price,twilioSid:r.twilio_sid,twilioToken:r.twilio_token,twilioPhone:r.twilio_phone,janeSubdomain:r.jane_subdomain,janeKey:r.jane_key,appsScriptUrl:r.apps_script_url};}
+
+// ── Load all data from Supabase on startup ─────────────────────────────
+async function loadAllData(){
+  try{
+    const [plansR,subsR,passesR,queueR,settingsR]=await Promise.all([
+      sb.from('plans').select('*').order('id'),
+      sb.from('subscriptions').select('*').order('id'),
+      sb.from('punch_passes').select('*').order('id'),
+      sb.from('queue').select('*').order('id'),
+      sb.from('settings').select('*').eq('id',1).single()
+    ]);
+    plans=(plansR.data||[]).map(dbPlanToApp);
+    subs=(subsR.data||[]).map(dbSubToApp);
+    passes=(passesR.data||[]).map(dbPassToApp);
+    queue=(queueR.data||[]).map(dbQueueToApp);
+    if(settingsR.data){
+      const loaded=dbSettingsToApp(settingsR.data);
+      Object.keys(loaded).forEach(k=>{ if(loaded[k]!==null && loaded[k]!==undefined) settings[k]=loaded[k]; });
+    }
+    dataReady=true;
+  }catch(err){
+    console.log('Supabase load error:',err);
+    showToast('Could not load data from Supabase — check connection');
+  }
 }
-function saveSetting(k,v){settings[k]=v;persist();}
+
+// Legacy no-op kept so existing calls to persist() don't break anything;
+// real saving now happens immediately per-action via the save*ToDb functions below.
+function persist(){}
+
+async function saveSetting(k,v){
+  settings[k]=v;
+  const colMap={practiceName:'practice_name',phone:'phone',checkinUrl:'checkin_url',overagePrice:'overage_price',twilioSid:'twilio_sid',twilioToken:'twilio_token',twilioPhone:'twilio_phone',janeSubdomain:'jane_subdomain',janeKey:'jane_key',appsScriptUrl:'apps_script_url'};
+  const col=colMap[k];
+  if(!col)return;
+  try{
+    await sb.from('settings').update({[col]:v}).eq('id',1);
+  }catch(err){console.log('Save setting error:',err);}
+}
 
 function nav(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -594,7 +617,6 @@ function nav(id,el){
   document.getElementById('page-'+id).classList.add('active');
   el.classList.add('active');
   closeAllMenus();
-  if(id==='alerts')renderAlerts();
   if(id==='memberships')renderMemberships();
   if(id==='checkin'){renderKioskQueue();refreshQR();}
   if(id==='janesync')renderSyncHistory();
@@ -612,7 +634,7 @@ function updateLabels(){
 }
 
 function loadSettings(){
-  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-overage':'overagePrice','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
+  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-overage':'overagePrice','set-sid':'twilioSid','set-token':'twilioToken','set-twilio-phone':'twilioPhone','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
   Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el&&settings[k]!==undefined)el.value=settings[k];});
 }
 
@@ -645,27 +667,36 @@ function openPlanModal(id){
   document.getElementById('planModal').classList.add('open');
 }
 function closePlanModal(){document.getElementById('planModal').classList.remove('open');}
-function savePlan(){
+async function savePlan(){
   const id=document.getElementById('pm-id').value;
   const name=document.getElementById('pm-name').value.trim();
   if(!name){showToast('Please enter a plan name');return;}
   const price=parseFloat(document.getElementById('pm-price').value)||0;
   const maxMembers=parseInt(document.getElementById('pm-maxmembers').value)||1;
-  if(id){const p=plans.find(x=>x.id===+id);if(p)Object.assign(p,{name,price,maxMembers});showToast(name+' updated');}
-  else{plans.push({id:nextPlanId++,name,price,maxMembers});showToast(name+' added');}
-  persist();closePlanModal();renderMemberships();renderDashboard();
+  try{
+    if(id){
+      const{data,error}=await sb.from('plans').update({name,price,max_members:maxMembers}).eq('id',+id).select().single();
+      if(error)throw error;
+      const p=plans.find(x=>x.id===+id);
+      if(p)Object.assign(p,dbPlanToApp(data));
+      showToast(name+' updated');
+    } else {
+      const{data,error}=await sb.from('plans').insert({name,price,max_members:maxMembers}).select().single();
+      if(error)throw error;
+      plans.push(dbPlanToApp(data));
+      showToast(name+' added');
+    }
+    closePlanModal();renderMemberships();renderDashboard();
+  }catch(err){console.log('Save plan error:',err);showToast('Could not save plan');}
 }
-function deletePlan(id){
+async function deletePlan(id){
   closeAllMenus();
-  const p=plans.find(x=>x.id===id);
-  if(!p)return;
-  const inUse=subs.filter(s=>s.planId===id).length;
-  const msg=inUse>0
-    ?`Delete "${p.name}"? This plan is used by ${inUse} subscription${inUse>1?'s':''} — they'll show as "No plan" until reassigned.`
-    :`Delete plan "${p.name}"? This cannot be undone.`;
-  if(!confirm(msg))return;
-  plans=plans.filter(p=>p.id!==id);
-  persist();renderMemberships();renderDashboard();showToast('Plan removed');
+  try{
+    const{error}=await sb.from('plans').delete().eq('id',id);
+    if(error)throw error;
+    plans=plans.filter(p=>p.id!==id);
+    renderMemberships();renderDashboard();showToast('Plan removed');
+  }catch(err){console.log('Delete plan error:',err);showToast('Could not delete plan');}
 }
 
 // ── SUB MODAL ─────────────────────────────────────────────────────────
@@ -682,12 +713,9 @@ function openSubModal(id){
     document.getElementById('sm-phone').value=s.phone||'';
     document.getElementById('sm-members').value=(s.members||[]).join('\n');
     document.getElementById('sm-since').value=s.since||'';
-    document.getElementById('sm-billing').value=s.billingDate||'';
-    document.getElementById('sm-payment').value=s.paymentStatus||'current';
     planSel.value=s.planId||'';
   } else {
-    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-since','sm-billing'].forEach(id=>document.getElementById(id).value='');
-    document.getElementById('sm-payment').value='current';
+    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-since'].forEach(id=>document.getElementById(id).value='');
   }
   planSel.onchange=function(){
     const p=plans.find(x=>x.id===+this.value);
@@ -696,7 +724,7 @@ function openSubModal(id){
   document.getElementById('subModal').classList.add('open');
 }
 function closeSubModal(){document.getElementById('subModal').classList.remove('open');}
-function saveSub(){
+async function saveSub(){
   const id=document.getElementById('sm-id').value;
   const groupName=document.getElementById('sm-name').value.trim();
   if(!groupName){showToast('Please enter an account name');return;}
@@ -706,26 +734,31 @@ function saveSub(){
   const phone=document.getElementById('sm-phone').value.trim();
   const membersRaw=document.getElementById('sm-members').value;
   const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
-  const since=document.getElementById('sm-since').value;
-  const billingDate=document.getElementById('sm-billing').value;
-  const paymentStatus=document.getElementById('sm-payment').value;
-  if(id){
-    const s=subs.find(x=>x.id===+id);
-    if(s)Object.assign(s,{groupName,planId,fee,primary,phone,members,since,billingDate,paymentStatus});
-    showToast(groupName+' updated');
-  } else {
-    subs.push({id:nextSubId++,groupName,planId,fee,primary,phone,members,since,billingDate,paymentStatus,active:true});
-    showToast(groupName+' added');
-  }
-  persist();closeSubModal();renderMemberships();renderDashboard();
+  const since=document.getElementById('sm-since').value||null;
+  const row={group_name:groupName,plan_id:planId,fee,primary_holder:primary,phone,members,since,active:true,needs_plan:false};
+  try{
+    if(id){
+      const{data,error}=await sb.from('subscriptions').update(row).eq('id',+id).select().single();
+      if(error)throw error;
+      const s=subs.find(x=>x.id===+id);
+      if(s)Object.assign(s,dbSubToApp(data));
+      showToast(groupName+' updated');
+    } else {
+      const{data,error}=await sb.from('subscriptions').insert(row).select().single();
+      if(error)throw error;
+      subs.push(dbSubToApp(data));
+      showToast(groupName+' added');
+    }
+    closeSubModal();renderMemberships();renderDashboard();
+  }catch(err){console.log('Save sub error:',err);showToast('Could not save subscription');}
 }
-function deleteSub(id){
-  const s=subs.find(x=>x.id===id);
-  if(!s)return;
-  const memberCount=1+(s.members||[]).length;
-  if(!confirm(`Remove subscription for "${s.groupName}" (${memberCount} member${memberCount>1?'s':''})? This cannot be undone.`))return;
-  subs=subs.filter(s=>s.id!==id);
-  persist();renderMemberships();renderDashboard();showToast('Subscription removed');
+async function deleteSub(id){
+  try{
+    const{error}=await sb.from('subscriptions').delete().eq('id',id);
+    if(error)throw error;
+    subs=subs.filter(s=>s.id!==id);
+    renderMemberships();renderDashboard();showToast('Subscription removed');
+  }catch(err){console.log('Delete sub error:',err);showToast('Could not delete subscription');}
 }
 
 // ── PASS MODAL ────────────────────────────────────────────────────────
@@ -742,7 +775,7 @@ function openPassModal(id){
   document.getElementById('passModal').classList.add('open');
 }
 function closePassModal(){document.getElementById('passModal').classList.remove('open');}
-function savePass(){
+async function savePass(){
   const id=document.getElementById('pass-id').value;
   const name=document.getElementById('pass-name').value.trim();
   if(!name){showToast('Please enter a name');return;}
@@ -751,23 +784,31 @@ function savePass(){
   const membersRaw=document.getElementById('pass-members').value;
   const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
   const visits=parseInt(document.getElementById('pass-visits').value)||0;
-  const date=document.getElementById('pass-date').value;
-  if(id){
-    const p=passes.find(x=>x.id===+id);
-    if(p)Object.assign(p,{name,primary,phone,members,visits,date});
-    showToast(name+' updated');
-  } else {
-    passes.push({id:nextPassId++,name,primary,phone,members,visits,date,active:true});
-    showToast(name+' added');
-  }
-  persist();closePassModal();renderMemberships();renderDashboard();
+  const date=document.getElementById('pass-date').value||null;
+  const row={name,primary_holder:primary,phone,members,visits,purchase_date:date,active:true};
+  try{
+    if(id){
+      const{data,error}=await sb.from('punch_passes').update(row).eq('id',+id).select().single();
+      if(error)throw error;
+      const p=passes.find(x=>x.id===+id);
+      if(p)Object.assign(p,dbPassToApp(data));
+      showToast(name+' updated');
+    } else {
+      const{data,error}=await sb.from('punch_passes').insert(row).select().single();
+      if(error)throw error;
+      passes.push(dbPassToApp(data));
+      showToast(name+' added');
+    }
+    closePassModal();renderMemberships();renderDashboard();
+  }catch(err){console.log('Save pass error:',err);showToast('Could not save pass');}
 }
-function deletePass(id){
-  const p=passes.find(x=>x.id===id);
-  if(!p)return;
-  if(!confirm(`Remove punch pass for "${p.name}"? This cannot be undone.`))return;
-  passes=passes.filter(p=>p.id!==id);
-  persist();renderMemberships();renderDashboard();showToast('Pass removed');
+async function deletePass(id){
+  try{
+    const{error}=await sb.from('punch_passes').delete().eq('id',id);
+    if(error)throw error;
+    passes=passes.filter(p=>p.id!==id);
+    renderMemberships();renderDashboard();showToast('Pass removed');
+  }catch(err){console.log('Delete pass error:',err);showToast('Could not delete pass');}
 }
 
 // ── RENDER MEMBERSHIPS ────────────────────────────────────────────────
@@ -784,30 +825,36 @@ function showMTab(name,el){
   document.getElementById('mview-'+name).style.display='block';
 }
 
-function stagePatient(subId,action){
+async function stagePatient(subId,action){
   const s=subs.find(x=>x.id===subId);
   if(!s)return;
-  if(action==='active'){
-    s.needsPlan=false;
-  } else if(action==='pass'){
-    passes.push({id:nextPassId++,name:s.groupName,primary:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,date:s.since||'',active:true});
-    subs=subs.filter(x=>x.id!==subId);
-  } else if(action==='inactive'){
-    s.active=false;
-    s.needsPlan=false;
-  }
-  persist();
-  renderMemberships();
-  try{renderDashboard();}catch(e){console.warn('Dashboard render error:',e);}
-  try{renderAlerts();}catch(e){console.warn('Alerts render error:',e);}
-  const msgs={active:'moved to Active — edit to assign a plan',pass:'moved to Punch passes',inactive:'marked inactive'};
-  if(msgs[action])showToast((s.groupName||'Patient')+' '+msgs[action]);
+  try{
+    if(action==='active'){
+      const{error}=await sb.from('subscriptions').update({needs_plan:false}).eq('id',subId);
+      if(error)throw error;
+      s.needsPlan=false;
+      showToast(s.groupName+' moved to Active — edit to assign a plan');
+    } else if(action==='pass'){
+      const passRow={name:s.groupName,primary_holder:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,purchase_date:s.since||null,active:true};
+      const{data,error}=await sb.from('punch_passes').insert(passRow).select().single();
+      if(error)throw error;
+      passes.push(dbPassToApp(data));
+      const{error:delErr}=await sb.from('subscriptions').delete().eq('id',subId);
+      if(delErr)throw delErr;
+      subs=subs.filter(x=>x.id!==subId);
+      showToast(s.groupName+' moved to Punch passes');
+    } else if(action==='inactive'){
+      const{error}=await sb.from('subscriptions').update({active:false,needs_plan:false}).eq('id',subId);
+      if(error)throw error;
+      s.active=false;
+      s.needsPlan=false;
+      showToast(s.groupName+' marked inactive');
+    }
+    renderMemberships();renderDashboard();
+  }catch(err){console.log('Stage patient error:',err);showToast('Could not update patient');}
 }
 
 function renderMemberships(){
-  // Remember which tab is currently visible so re-renders don't reset it
-  const activeTabView=Array.from(document.querySelectorAll('.m-tab-view')).find(v=>v.style.display!=='none');
-  const activeTabId=activeTabView?activeTabView.id:'mview-patients';
   const assigned=subs.filter(s=>s.active&&!s.needsPlan);
   const unassigned=subs.filter(s=>s.active&&s.needsPlan);
   const totalSubs=assigned.length;
@@ -965,174 +1012,10 @@ function renderMemberships(){
       </div>`;
     }).join('');
   }
-
-  // Restore whichever tab was visible before re-render
-  document.querySelectorAll('.m-tab-view').forEach(v=>v.style.display='none');
-  const toShow=document.getElementById(activeTabId);
-  if(toShow)toShow.style.display='block';
 }
 
 
-// ── DISMISSED ALERTS ──────────────────────────────────────────────────
-let dismissedAlerts=JSON.parse(localStorage.getItem('sp_dismissed_alerts')||'[]');
-function dismissAlert(key){
-  if(!dismissedAlerts.includes(key))dismissedAlerts.push(key);
-  localStorage.setItem('sp_dismissed_alerts',JSON.stringify(dismissedAlerts));
-  renderAlerts();
-}
-function dismissAllAlerts(){
-  if(!confirm('Dismiss all dismissable alerts? They\'ll reappear if the underlying issue isn\'t resolved.'))return;
-  const el=document.getElementById('alertsContent');
-  if(el)Array.from(el.querySelectorAll('[data-alert-key]')).forEach(e=>{
-    if(!dismissedAlerts.includes(e.dataset.alertKey))dismissedAlerts.push(e.dataset.alertKey);
-  });
-  localStorage.setItem('sp_dismissed_alerts',JSON.stringify(dismissedAlerts));
-  renderAlerts();
-}
-
-// ── RENDER ALERTS ─────────────────────────────────────────────────────
-function renderAlerts(){
-  const allAlerts=[];
-  const today=new Date();
-  const thirtyDaysAgo=new Date(today); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate()-30);
-  const sixtyDaysAgo=new Date(today);  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate()-60);
-  const sevenDaysFromNow=new Date(today); sevenDaysFromNow.setDate(sevenDaysFromNow.getDate()+7);
-
-  // 1. Patients needing a plan (undismissable)
-  const needsPlan=subs.filter(s=>s.active&&s.needsPlan);
-  if(needsPlan.length) allAlerts.push({key:'needs-plan',level:'error',icon:'ti-id-badge',dismissable:false,
-    title:needsPlan.length+' patient'+(needsPlan.length>1?'s':'')+' need'+(needsPlan.length===1?'s':'')+' a plan assigned',
-    body:needsPlan.map(s=>s.groupName).join(', '),
-    action:{label:'Go to Patients tab',fn:"nav('memberships',document.querySelector('.nav-item:nth-child(5)'));showMTab('patients',document.getElementById('mtab-patients'))"}});
-
-  // 2. Failed / overdue payments (undismissable)
-  subs.filter(s=>s.active&&(s.paymentStatus==='failed'||s.paymentStatus==='overdue')).forEach(s=>{
-    allAlerts.push({key:'payment-'+s.id,level:'error',icon:'ti-credit-card-off',dismissable:false,
-      title:s.groupName+' — payment '+(s.paymentStatus==='failed'?'declined':'overdue'),
-      body:(s.phone||'no phone on file')+' · $'+s.fee+'/mo'+(s.billingDate?' · billing date '+new Date(s.billingDate).toLocaleDateString('en-US',{month:'short',day:'numeric'}):''),
-      action:{label:'Edit subscription',fn:'openSubModal('+s.id+')'}});
-  });
-
-  // 3. Active subscriptions missing a plan (undismissable)
-  const noPlan=subs.filter(s=>s.active&&!s.needsPlan&&!s.planId);
-  if(noPlan.length) allAlerts.push({key:'no-plan-assigned',level:'error',icon:'ti-alert-circle',dismissable:false,
-    title:noPlan.length+' active subscription'+(noPlan.length!==1?'s':'')+' missing a plan',
-    body:noPlan.map(s=>s.groupName).join(', ')+' — edit each to assign a plan',
-    action:{label:'Go to Active tab',fn:"nav('memberships',document.querySelectorAll('.nav-item')[4]);showMTab('active',document.getElementById('mtab-active'))"}});
-
-  // 4. Billing coming up in next 7 days
-  subs.filter(s=>s.active&&s.billingDate&&s.paymentStatus==='current').forEach(s=>{
-    const bd=new Date(s.billingDate);
-    if(!isNaN(bd)&&bd>=today&&bd<=sevenDaysFromNow){
-      const days=Math.ceil((bd-today)/(1000*60*60*24));
-      allAlerts.push({key:'billing-soon-'+s.id+'-'+s.billingDate,level:'warn',icon:'ti-calendar-dollar',dismissable:true,
-        title:s.groupName+' — billing in '+days+' day'+(days!==1?'s':''),
-        body:'$'+s.fee+'/mo · '+(s.phone||'no phone on file')+' · '+bd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
-        action:{label:'Edit subscription',fn:'openSubModal('+s.id+')'}});
-    }
-  });
-
-  // 5. Punch passes running low (≤ 2 visits)
-  passes.filter(p=>p.active&&p.visits<=2).forEach(p=>{
-    allAlerts.push({key:'low-pass-'+p.id+'-'+p.visits,level:'warn',icon:'ti-ticket',dismissable:true,
-      title:p.name+' — punch pass '+(p.visits===0?'empty':'running low'),
-      body:(p.visits===0?'No visits remaining':'Only '+p.visits+' visit'+(p.visits!==1?'s':'')+' left')+' · '+(p.phone||'no phone on file'),
-      action:{label:'Renew pass',fn:'openPassModal('+p.id+')'}});
-  });
-
-  // 6. New members in first 30 days
-  subs.filter(s=>s.active&&s.since).forEach(s=>{
-    const since=new Date(s.since);
-    if(!isNaN(since)&&since>=thirtyDaysAgo&&since<=today){
-      const daysIn=Math.floor((today-since)/(1000*60*60*24));
-      allAlerts.push({key:'new-member-'+s.id,level:'info',icon:'ti-user-plus',dismissable:true,
-        title:s.groupName+' — new member (day '+daysIn+')',
-        body:'Joined '+since.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · first 30 days are highest churn risk · '+(s.phone||'no phone on file'),
-        action:{label:'Send welcome SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}});
-    }
-  });
-
-  // 7. At-risk members — no visit in 30+ days
-  subs.filter(s=>s.active&&!s.needsPlan&&s.lastVisit).forEach(s=>{
-    const lv=new Date(s.lastVisit);
-    if(!isNaN(lv)&&lv<thirtyDaysAgo){
-      const daysAgo=Math.floor((today-lv)/(1000*60*60*24));
-      allAlerts.push({key:'at-risk-'+s.id+'-'+s.lastVisit,level:lv<sixtyDaysAgo?'warn':'info',icon:'ti-user-exclamation',dismissable:true,
-        title:s.groupName+' — no visit in '+daysAgo+' days'+(lv<sixtyDaysAgo?' ⚠':''),
-        body:'Last seen '+lv.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' · '+(s.phone||'no phone on file'),
-        action:{label:'Send check-in SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}});
-    }
-  });
-
-  // 8. Punch passes unused for 60+ days
-  passes.filter(p=>p.active&&p.visits>0&&p.date).forEach(p=>{
-    const pd=new Date(p.date);
-    if(!isNaN(pd)&&pd<sixtyDaysAgo){
-      const daysAgo=Math.floor((today-pd)/(1000*60*60*24));
-      allAlerts.push({key:'stale-pass-'+p.id,level:'info',icon:'ti-clock-pause',dismissable:true,
-        title:p.name+' — punch pass unused for '+daysAgo+' days',
-        body:p.visits+' visit'+(p.visits!==1?'s':'')+' remaining · purchased '+pd.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' · '+(p.phone||'no phone on file'),
-        action:{label:'Send reminder SMS',fn:"nav('sms',document.querySelectorAll('.nav-item')[5]);buildSmsAudience()"}});
-    }
-  });
-
-  // Filter dismissed
-  const visible=allAlerts.filter(a=>!dismissedAlerts.includes(a.key));
-  const urgentCount=visible.filter(a=>a.level==='error'||a.level==='warn').length;
-
-  // Nav dot
-  const navAlerts=document.querySelector('.nav-item[onclick*="alerts"]');
-  if(navAlerts){
-    let dot=navAlerts.querySelector('.alert-dot');
-    if(urgentCount>0){
-      if(!dot){dot=document.createElement('span');dot.className='alert-dot';navAlerts.appendChild(dot);}
-      dot.style.display='';
-    } else if(dot) dot.style.display='none';
-  }
-
-  const el=document.getElementById('alertsContent');
-  if(!el)return;
-
-  if(!visible.length){
-    const nDismissed=allAlerts.length;
-    el.innerHTML=`<div class="empty-state" style="padding:48px 20px">
-      <i class="ti ti-circle-check" style="font-size:32px;display:block;margin-bottom:10px;color:var(--oak)"></i>
-      <div>No alerts right now — you're all caught up!</div>
-      ${nDismissed?`<button class="sm-btn" style="margin-top:16px" onclick="dismissedAlerts=[];localStorage.removeItem('sp_dismissed_alerts');renderAlerts()">Restore ${nDismissed} dismissed alert${nDismissed!==1?'s':''}</button>`:''}
-    </div>`;
-    return;
-  }
-
-  const colorMap={
-    error:{bg:'#fdf0ee',border:'#e8b0a8',icon:'#a03020',badgeLabel:'Action needed'},
-    warn: {bg:'#fef5f0',border:'#e8b99a',icon:'#935b38',badgeLabel:'Attention'},
-    info: {bg:'#f5f0e8',border:'#dfd3c3',icon:'#62684c',badgeLabel:'Info'}
-  };
-  const dismissableCount=visible.filter(a=>a.dismissable).length;
-
-  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-    <div style="font-size:13px;color:var(--text-secondary)">${visible.length} alert${visible.length!==1?'s':''} · ${urgentCount} need${urgentCount!==1?'':'s'} attention</div>
-    ${dismissableCount>1?`<button class="sm-btn" onclick="dismissAllAlerts()">Dismiss all</button>`:''}
-  </div>`+visible.map(a=>{
-    const c=colorMap[a.level]||colorMap.info;
-    return `<div data-alert-key="${a.key}" style="background:${c.bg};border:0.5px solid ${c.border};border-radius:12px;padding:16px 18px;margin-bottom:10px;display:flex;gap:13px;align-items:flex-start">
-      <i class="ti ${a.icon}" style="font-size:18px;color:${c.icon};flex-shrink:0;margin-top:2px"></i>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap">
-          <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${a.title}</div>
-          <span style="font-size:10px;font-weight:600;color:${c.icon};background:${c.bg};border:0.5px solid ${c.border};border-radius:20px;padding:1px 7px;white-space:nowrap">${c.badgeLabel}</span>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;margin-bottom:8px">${a.body}</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          ${a.action?`<button class="sm-btn" onclick="${a.action.fn}">${a.action.label} →</button>`:''}
-          ${a.dismissable?`<button class="sm-btn" style="color:var(--text-hint);border-color:var(--border)" onclick="dismissAlert('${a.key}')">Dismiss</button>`:''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-
+// ── RENDER DASHBOARD ──────────────────────────────────────────────────
 function renderDashboard(){
   updateLabels();
   const activeSubs=subs.filter(s=>s.active);
@@ -1142,19 +1025,6 @@ function renderDashboard(){
   const passCount=passes.filter(p=>p.active).length;
   const convPct=totalPts>0?Math.round(totalSubs/totalPts*100):0;
 
-  // needsPlan banner
-  const unassigned=subs.filter(s=>s.active&&s.needsPlan);
-  const banner=document.getElementById('needsPlanBanner');
-  if(banner){
-    if(unassigned.length){
-      banner.style.display='flex';
-      document.getElementById('needsPlanCount').textContent=unassigned.length;
-      document.getElementById('needsPlanPlural').textContent=unassigned.length===1?'':'s';
-    } else {
-      banner.style.display='none';
-    }
-  }
-
   document.getElementById('d-subs').textContent=totalSubs;
   document.getElementById('d-pts-sub').textContent='covers '+totalPts+' patient'+(totalPts!==1?'s':'');
   document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
@@ -1163,8 +1033,6 @@ function renderDashboard(){
   document.getElementById('conv-pct-label').textContent=convPct+'%';
   document.getElementById('d-conv-sub').textContent=totalPts?totalSubs+' subs · '+totalPts+' patients':'no data yet';
   document.getElementById('conv-arc').style.strokeDashoffset=125.7-(convPct/100*125.7);
-  document.getElementById('d-visits-today').textContent=queue.length;
-  document.getElementById('d-visits-sub').textContent=queue.length===1?'1 check-in today':queue.length+' check-ins today';
 
   const waiting=queue.filter(q=>q.status!=='in');
   document.getElementById('d-queue-badge').textContent=waiting.length+' waiting';
@@ -1190,7 +1058,7 @@ function renderQueueItems(el,list){
     const plan=sub?plans.find(p=>p.id===sub.planId):null;
     const ci=plan?plans.indexOf(plan):5;
     return `<div class="queue-item">
-      <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${q.initials}</div>
+      <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${(q.name||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
       <div class="q-info"><div class="q-name">${q.name}</div><div class="q-detail">${plan?plan.name:'Walk-in'} · ${q.time}${q.visitCount?' · visit #'+q.visitCount+' this month':''}</div></div>
       <div class="q-status"><div class="dot ${q.status==='in'?'dot-in':q.status==='ready'?'dot-ready':'dot-wait'}"></div>${q.status==='in'?'In session':q.status==='ready'?'Ready':'Waiting'}</div>
     </div>`;
@@ -1203,39 +1071,38 @@ function renderKioskQueue(){
   if(!waiting.length){el.innerHTML='<div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div>';}
   else renderQueueItems(el,waiting);
 }
-function decrementPassIfHolder(name){
-  // Find a punch pass where the primary or any member matches the checked-in name
-  const nameLower=name.toLowerCase().trim();
-  const pass=passes.find(p=>p.active&&(
-    (p.primary||p.name).toLowerCase()===nameLower||
-    (p.members||[]).some(m=>m.toLowerCase()===nameLower)
-  ));
-  if(pass&&pass.visits>0){
-    pass.visits--;
-    if(pass.visits===0){
-      showToast(name+' checked in · punch pass now empty — time to renew!');
-    } else if(pass.visits<=2){
-      showToast(name+' checked in · '+pass.visits+' visit'+(pass.visits>1?'s':'')+' remaining on pass');
-    }
-    persist();
-    renderMemberships();
-    return true;
-  }
-  return false;
-}
-
-function kioskCheckIn(){
+async function kioskCheckIn(){
   const name=document.getElementById('kioskName').value.trim();
   if(!name)return;
-  queue.unshift({id:Date.now(),name,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),status:'waiting',initials:name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()});
-  const wasPunchPass=decrementPassIfHolder(name);
-  persist();
-  document.getElementById('kioskName').value='';
-  renderKioskQueue();renderDashboard();
-  if(!wasPunchPass)showToast(name+' checked in');
+  const row={name,time_label:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),status:'waiting',visit_count:1};
+  try{
+    const{data,error}=await sb.from('queue').insert(row).select().single();
+    if(error)throw error;
+    queue.unshift(dbQueueToApp(data));
+    document.getElementById('kioskName').value='';
+    renderKioskQueue();renderDashboard();
+    showToast(name+' checked in');
+  }catch(err){console.log('Check-in error:',err);showToast('Could not check in — try again');}
 }
 
 // ── SMS ───────────────────────────────────────────────────────────────
+function getAudiencePhones(v){
+  const nums=new Set();
+  const add=function(p){if(p&&p.trim())nums.add(p.trim());};
+  if(v==='all'){
+    subs.filter(s=>s.active).forEach(s=>add(s.phone));
+    passes.filter(p=>p.active).forEach(p=>add(p.phone));
+  } else if(v==='sub'){
+    subs.filter(s=>s.active).forEach(s=>add(s.phone));
+  } else if(v==='pass'){
+    passes.filter(p=>p.active).forEach(p=>add(p.phone));
+  } else if(v.startsWith('plan-')){
+    const pid=parseInt(v.replace('plan-',''));
+    subs.filter(s=>s.active&&s.planId===pid).forEach(s=>add(s.phone));
+  }
+  return Array.from(nums);
+}
+
 function buildSmsAudience(){
   const allPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0)+passes.filter(p=>p.active).length;
   const subPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0);
@@ -1273,42 +1140,53 @@ function sendSMS(){
   const msg=document.getElementById('smsBody').value.trim();
   if(!msg){showToast('Please write a message first');return;}
   const tier=document.getElementById('smsTier');
-  const label=tier.options[tier.selectedIndex].text;
+  const audienceVal=tier.value;
+  const audienceLabel=tier.options[tier.selectedIndex].text;
+  const phones=getAudiencePhones(audienceVal);
 
-  // Build recipient phone list from selected audience
-  const v=tier.value;
-  let recipients=[];
-  if(v==='all'||v==='sub'){
-    recipients=recipients.concat(subs.filter(s=>s.active&&s.phone).map(s=>s.phone));
+  if(!phones.length){
+    showToast('No phone numbers found for this audience');
+    return;
   }
-  if(v==='all'||v==='pass'){
-    recipients=recipients.concat(passes.filter(p=>p.active&&p.phone).map(p=>p.phone));
-  }
-  if(v.startsWith('plan-')){
-    const pid=parseInt(v.replace('plan-',''));
-    recipients=subs.filter(s=>s.active&&s.planId===pid&&s.phone).map(s=>s.phone);
-  }
-  recipients=[...new Set(recipients)]; // dedupe
-
   if(!settings.appsScriptUrl){
-    showToast('Add your Apps Script URL in Settings to send SMS');
+    showToast('Add your Apps Script URL in Settings first');
     return;
   }
 
-  const btn=document.querySelector('#page-sms .primary-btn');
+  const btn=document.getElementById('sendSmsBtn');
   if(btn){btn.disabled=true;btn.textContent='Sending…';}
 
-  fetch(settings.appsScriptUrl,{
-    method:'POST',
-    mode:'no-cors',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'sendSMS',recipients,message:msg})
-  }).finally(()=>{
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Send SMS';}
-    shArr.unshift({msg,label,time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),count:recipients.length});
-    document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px;margin-bottom:6px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}${h.count?' · '+h.count+' recipients':''}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
-    showToast('SMS dispatched via Apps Script — check your Sheet for delivery status');
-  });
+  const url=settings.appsScriptUrl
+    +'?action=sendSms'
+    +'&numbers='+encodeURIComponent(phones.join(','))
+    +'&body='+encodeURIComponent(msg);
+
+  fetch(url,{method:'GET'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data&&data.success){
+        shArr.unshift({
+          msg,
+          label:audienceLabel+' — '+data.sent+' sent'+(data.failed?', '+data.failed+' failed':''),
+          time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+        });
+        renderSendHistory();
+        showToast(data.sent+' message'+(data.sent!==1?'s':'')+' sent'+(data.failed?', '+data.failed+' failed':''));
+      } else {
+        showToast('Send failed: '+(data&&data.error?data.error:'unknown error'));
+      }
+    })
+    .catch(function(e){
+      showToast('Could not reach Twilio relay — check Apps Script URL');
+      console.log('SMS send error:',e);
+    })
+    .finally(function(){
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Send SMS';}
+    });
+}
+
+function renderSendHistory(){
+  document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
 }
 
 // ── DROPDOWNS ─────────────────────────────────────────────────────────
@@ -1530,56 +1408,66 @@ function showSyncTab(name,el){
   document.getElementById('sync-tab-'+name).style.display='block';
 }
 
-function confirmSync(){
+async function confirmSync(){
   if(!pendingSync)return;
   const{newPts,updates}=pendingSync;
 
-  // Add new patients as unassigned entries (no plan yet — user assigns in Memberships)
-  newPts.forEach(p=>{
-    // Add as a single-person subscription placeholder so they appear in the system
-    // User can then assign plan and group them properly in Memberships
-    subs.push({
-      id:nextSubId++,
-      groupName:p.displayName,
-      planId:null,
-      fee:0,
-      primary:p.displayName,
-      phone:p.phone,
-      members:[],
-      since:p.memberSince||p.firstVisit||'',
-      active:true,
-      needsPlan:true
-    });
-  });
+  try{
+    // Bulk insert new patients as unassigned subscription placeholders
+    if(newPts.length){
+      const rows=newPts.map(p=>({
+        group_name:p.displayName,
+        plan_id:null,
+        fee:0,
+        primary_holder:p.displayName,
+        phone:p.phone,
+        members:[],
+        since:p.memberSince||p.firstVisit||null,
+        active:true,
+        needs_plan:true
+      }));
+      const{data,error}=await sb.from('subscriptions').insert(rows).select();
+      if(error)throw error;
+      (data||[]).forEach(r=>subs.push(dbSubToApp(r)));
+    }
 
-  // Apply phone updates
-  updates.forEach(u=>{
-    if(u.sub)u.sub.phone=u.phone;
-    if(u.pass)u.pass.phone=u.phone;
-  });
+    // Apply phone updates
+    for(const u of updates){
+      if(u.sub){
+        const{error}=await sb.from('subscriptions').update({phone:u.phone}).eq('id',u.sub.id);
+        if(error)throw error;
+        u.sub.phone=u.phone;
+      }
+      if(u.pass){
+        const{error}=await sb.from('punch_passes').update({phone:u.phone}).eq('id',u.pass.id);
+        if(error)throw error;
+        u.pass.phone=u.phone;
+      }
+    }
 
-  // Log sync
-  const entry={
-    date:new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}),
-    added:newPts.length,
-    updated:updates.length,
-    inactive:pendingSync.inactivePts.length,
-    total:pendingSync.total
-  };
-  syncHistory.unshift(entry);
-  localStorage.setItem('sp_syncHistory',JSON.stringify(syncHistory));
+    // Log sync (kept in localStorage — history only, not critical shared data)
+    const entry={
+      date:new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+      added:newPts.length,
+      updated:updates.length,
+      inactive:pendingSync.inactivePts.length,
+      total:pendingSync.total
+    };
+    syncHistory.unshift(entry);
+    localStorage.setItem('sp_syncHistory',JSON.stringify(syncHistory));
 
-  persist();
-  renderSyncHistory();
-  resetSync();
-  renderMemberships();
-  renderDashboard();
+    renderSyncHistory();
+    resetSync();
+    renderMemberships();
+    renderDashboard();
 
-  const msg=`Sync complete — ${newPts.length} added, ${updates.length} updated`;
-  showToast(msg);
-
-  if(newPts.length>0){
-    setTimeout(()=>showToast('New patients added without a plan — assign plans in Memberships'),3500);
+    showToast(`Sync complete — ${newPts.length} added, ${updates.length} updated`);
+    if(newPts.length>0){
+      setTimeout(()=>showToast('New patients added without a plan — assign plans in Memberships'),3500);
+    }
+  }catch(err){
+    console.log('Sync error:',err);
+    showToast('Sync failed — check connection and try again');
   }
 }
 
@@ -1596,81 +1484,43 @@ function resetSync(){
 // ── GOOGLE SHEET QUEUE POLLING ────────────────────────────────────────
 let pollInterval=null;
 
-// ── CLEAR QUEUE ───────────────────────────────────────────────────────
-function clearQueue(){
-  if(!confirm('Archive today\'s check-ins and clear the queue? This cannot be undone.'))return;
-  const btn=document.getElementById('clearQueueBtn');
-  if(btn){btn.disabled=true;btn.innerHTML='<i class="ti ti-loader" style="font-size:12px"></i> Clearing…';}
-
-  const finish=(success,msg)=>{
-    // Always clear the local queue regardless of sheet response
-    queue=[];
-    persist();
-    renderKioskQueue();
-    renderDashboard();
-    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-archive" style="font-size:12px"></i> Clear queue';}
-    showToast(msg);
-  };
-
-  if(!settings.appsScriptUrl){
-    // No Apps Script connected — just clear local queue
-    finish(true,'Queue cleared locally (connect Apps Script to also archive the sheet)');
-    return;
-  }
-
-  fetch(settings.appsScriptUrl,{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({action:'clearQueue'})
-  })
-  .then(r=>r.json())
-  .then(data=>{
-    finish(true, data.ok ? 'Queue cleared and archived to History sheet' : 'Queue cleared locally (sheet error: '+(data.error||'unknown')+')');
-  })
-  .catch(()=>{
-    finish(false,'Queue cleared locally — could not reach sheet');
-  });
-}
-
 function startPolling(){
   if(pollInterval)clearInterval(pollInterval);
-  if(!settings.appsScriptUrl)return; // don't poll if no URL configured
+  if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
   pollSheetQueue();
   pollInterval=setInterval(pollSheetQueue,30000);
 }
 
 function pollSheetQueue(){
-  const APPS_URL=settings.appsScriptUrl;
-  if(!APPS_URL)return;
+  const APPS_URL='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
   fetch(APPS_URL+'?action=getQueue',{method:'GET'})
     .then(function(r){return r.json();})
-    .then(function(data){
+    .then(async function(data){
       if(!data||!data.rows||!data.rows.length)return;
       const todayStr=new Date().toDateString();
       const existing=queue.map(function(q){return q.name.toLowerCase();});
       let added=0;
-      data.rows.forEach(function(r){
+      for(const r of data.rows){
         const name=(r.name||'').trim();
         const visitCount=parseInt(r.visitCount)||1;
         const rowDate=new Date(r.timestamp||'');
         const isToday=!isNaN(rowDate)&&rowDate.toDateString()===todayStr;
         if(name&&isToday&&!existing.includes(name.toLowerCase())){
-          queue.push({
-            id:Date.now()+Math.random(),
-            name:name,
-            time:rowDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
-            status:'waiting',
-            initials:name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase(),
-            visitCount:visitCount,
-            fromSheet:true
-          });
-          existing.push(name.toLowerCase());
-          decrementPassIfHolder(name);
-          added++;
+          try{
+            const{data:inserted,error}=await sb.from('queue').insert({
+              name:name,
+              time_label:rowDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+              status:'waiting',
+              visit_count:visitCount
+            }).select().single();
+            if(error)throw error;
+            queue.push(dbQueueToApp(inserted));
+            existing.push(name.toLowerCase());
+            added++;
+          }catch(err){console.log('Queue insert error:',err);}
         }
-      });
+      }
       if(added>0){
-        persist();
         renderKioskQueue();
         renderDashboard();
         showToast(added+' patient'+(added>1?'s':'')+' checked in via QR');
@@ -1680,21 +1530,11 @@ function pollSheetQueue(){
 }
 
 
-// ── TOAST ─────────────────────────────────────────────────────────────
-let toastTimer=null;
-function showToast(msg,duration){
-  const t=document.getElementById('toast');
-  const m=document.getElementById('toastMsg');
-  if(!t||!m)return;
-  m.textContent=msg;
-  t.classList.add('show');
-  if(toastTimer)clearTimeout(toastTimer);
-  toastTimer=setTimeout(()=>t.classList.remove('show'),duration||3000);
-}
-
 // ── INIT ──────────────────────────────────────────────────────────────
-window.onload=function(){
-  loadSettings();updateLabels();renderDashboard();renderAlerts();refreshQR();renderSyncHistory();startPolling();
+window.onload=async function(){
+  showToast('Loading your data…');
+  await loadAllData();
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
