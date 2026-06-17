@@ -1241,6 +1241,15 @@ function renderSendHistory(){
 }
 
 // ── DROPDOWNS ─────────────────────────────────────────────────────────
+function showToast(msg){
+  const t=document.getElementById('toast');
+  const m=document.getElementById('toastMsg');
+  if(!t||!m)return;
+  m.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
 function closeAllMenus(){document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));}
 function toggleMenu(id,e){e.stopPropagation();const m=document.getElementById('menu-'+id);const was=m.classList.contains('open');closeAllMenus();if(!was)m.classList.add('open');}
 document.addEventListener('click',closeAllMenus);
