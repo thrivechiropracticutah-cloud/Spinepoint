@@ -151,6 +151,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .stage-btn.pass-btn:hover{background:#eed8a8}
 .stage-btn.inactive-btn{background:#f5ddd8;color:#7a2e1e;border-color:#ddb0a0}
 .stage-btn.inactive-btn:hover{background:#ecc8c0}
+.del-row-btn{background:none;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 7px;cursor:pointer;color:var(--text-hint);display:inline-flex;align-items:center;justify-content:center}
+.del-row-btn:hover{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
 padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margin-bottom:-0.5px}
 .sync-tab:hover{color:var(--text-primary)}
 .sync-tab.active{color:var(--oak);border-bottom-color:var(--oak);font-weight:500}
@@ -868,6 +870,17 @@ async function stagePatient(subId,action){
   }catch(err){console.log('Stage patient error:',err);showToast('Could not update patient');}
 }
 
+async function deleteStagedPatient(subId,name){
+  if(!confirm('Delete "'+name+'" completely? This cannot be undone — use this for duplicates from Jane sync.'))return;
+  try{
+    const{error}=await sb.from('subscriptions').delete().eq('id',subId);
+    if(error)throw error;
+    subs=subs.filter(x=>x.id!==subId);
+    renderMemberships();renderDashboard();
+    showToast(name+' deleted');
+  }catch(err){console.log('Delete staged patient error:',err);showToast('Could not delete patient');}
+}
+
 async function reactivatePatient(subId){
   const s=subs.find(x=>x.id===subId);
   if(!s)return;
@@ -923,6 +936,7 @@ function renderMemberships(){
           <button class="stage-btn active-btn" onclick="stagePatient(${s.id},'active')"><i class="ti ti-id-badge" style="font-size:12px"></i> Active</button>
           <button class="stage-btn pass-btn" onclick="stagePatient(${s.id},'pass')"><i class="ti ti-ticket" style="font-size:12px"></i> Punch pass</button>
           <button class="stage-btn inactive-btn" onclick="stagePatient(${s.id},'inactive')"><i class="ti ti-user-off" style="font-size:12px"></i> Inactive</button>
+          <button class="del-row-btn" onclick="deleteStagedPatient(${s.id},'${s.groupName.replace(/'/g,"\\'")}')" title="Delete this entry"><i class="ti ti-x"></i></button>
         </div>
       </div>`;
     }).join('');
