@@ -281,6 +281,9 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
             <button class="m-tab" id="mtab-punch" onclick="showMTab('punch',this)">
               <i class="ti ti-ticket" style="font-size:14px"></i> Punch passes <span class="m-tab-count" id="mtab-count-punch">0</span>
             </button>
+            <button class="m-tab" id="mtab-inactive" onclick="showMTab('inactive',this)">
+              <i class="ti ti-user-off" style="font-size:14px"></i> Inactive <span class="m-tab-count" id="mtab-count-inactive">0</span>
+            </button>
             <button class="m-tab" id="mtab-plans" onclick="showMTab('plans',this)">
               <i class="ti ti-layout-grid" style="font-size:14px"></i> Plans <span class="m-tab-count" id="mtab-count-plans">0</span>
             </button>
@@ -320,6 +323,17 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
             <button class="primary-btn" style="padding:6px 12px;font-size:12px;gap:5px" onclick="openPassModal()"><i class="ti ti-plus"></i> Add pass</button>
           </div>
           <div id="passHolderList"><div class="empty-state"><i class="ti ti-ticket"></i>No punch pass holders yet</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: INACTIVE -->
+      <div id="mview-inactive" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Inactive patients</div>
+            <span class="badge b-gray" id="inactive-count-badge">0 inactive</span>
+          </div>
+          <div id="inactiveList"><div class="empty-state"><i class="ti ti-user-off"></i>No inactive patients</div></div>
         </div>
       </div>
 
@@ -854,9 +868,23 @@ async function stagePatient(subId,action){
   }catch(err){console.log('Stage patient error:',err);showToast('Could not update patient');}
 }
 
+async function reactivatePatient(subId){
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({active:true,needs_plan:true}).eq('id',subId);
+    if(error)throw error;
+    s.active=true;
+    s.needsPlan=true;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' reactivated — sort them in the Patients tab');
+  }catch(err){console.log('Reactivate error:',err);showToast('Could not reactivate patient');}
+}
+
 function renderMemberships(){
   const assigned=subs.filter(s=>s.active&&!s.needsPlan);
   const unassigned=subs.filter(s=>s.active&&s.needsPlan);
+  const inactiveSubs=subs.filter(s=>!s.active);
   const totalSubs=assigned.length;
   const totalPts=assigned.reduce((a,s)=>a+1+(s.members||[]).length,0);
   const totalMRR=assigned.reduce((a,s)=>a+s.fee,0);
@@ -870,6 +898,7 @@ function renderMemberships(){
   document.getElementById('mtab-count-patients').textContent=unassigned.length;
   document.getElementById('mtab-count-active').textContent=totalSubs;
   document.getElementById('mtab-count-punch').textContent=passCount;
+  document.getElementById('mtab-count-inactive').textContent=inactiveSubs.length;
   document.getElementById('mtab-count-plans').textContent=plans.length;
 
   const cnt=document.getElementById('mtab-count-patients');
@@ -981,6 +1010,28 @@ function renderMemberships(){
         <div class="sub-group-body">
           <div class="sub-group-section"><div class="sub-section-label">Primary holder</div><span class="member-pill primary"><i class="ti ti-user" style="font-size:11px"></i>${p.primary||p.name}</span></div>
           ${p.members&&p.members.length?`<div class="sub-group-section"><div class="sub-section-label">Also on this pass</div>${p.members.map(m=>`<span class="member-pill">${m}</span>`).join('')}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── INACTIVE TAB ──
+  document.getElementById('inactive-count-badge').textContent=inactiveSubs.length+' inactive';
+  const il=document.getElementById('inactiveList');
+  if(!inactiveSubs.length){
+    il.innerHTML='<div class="empty-state"><i class="ti ti-user-off"></i>No inactive patients</div>';
+  } else {
+    il.innerHTML=inactiveSubs.map(s=>{
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      return `<div class="staging-row" style="opacity:0.75">
+        <div class="avatar" style="background:#f0ece6;color:#9c9181">${initials}</div>
+        <div class="staging-row-info">
+          <div class="staging-row-name">${s.groupName}</div>
+          <div class="staging-row-detail">${s.phone||'no phone'} · since ${since} · inactive</div>
+        </div>
+        <div class="staging-actions">
+          <button class="stage-btn active-btn" onclick="reactivatePatient(${s.id})"><i class="ti ti-rotate" style="font-size:12px"></i> Reactivate</button>
         </div>
       </div>`;
     }).join('');
@@ -1408,6 +1459,15 @@ function showSyncTab(name,el){
   document.getElementById('sync-tab-'+name).style.display='block';
 }
 
+// Converts any date-ish string (e.g. "May 1, 2024", "5/1/2024", ISO, or empty) into
+// a YYYY-MM-DD string Postgres will accept, or null if it can't be parsed.
+function toSafeDate(val){
+  if(!val)return null;
+  const d=new Date(val);
+  if(isNaN(d.getTime()))return null;
+  return d.toISOString().split('T')[0];
+}
+
 async function confirmSync(){
   if(!pendingSync)return;
   const{newPts,updates}=pendingSync;
@@ -1422,7 +1482,7 @@ async function confirmSync(){
         primary_holder:p.displayName,
         phone:p.phone,
         members:[],
-        since:p.memberSince||p.firstVisit||null,
+        since:toSafeDate(p.memberSince||p.firstVisit),
         active:true,
         needs_plan:true
       }));
