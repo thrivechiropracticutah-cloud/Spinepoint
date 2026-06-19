@@ -248,24 +248,23 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
     <!-- ALERTS -->
     <div class="page" id="page-alerts">
       <div class="page-title">Alerts &amp; reminders</div>
-      <div class="page-sub">Re-eval reminders and automated flags</div>
-
+      <div class="page-sub">Things that need your attention today</div>
       <div class="card" style="margin-bottom:12px">
         <div class="card-header">
-          <div class="card-title">Re-eval tracker</div>
+          <div class="card-title">Re-eval threshold</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:12px;color:var(--text-secondary)">Alert every</span>
             <input type="number" id="reeval-threshold" value="15" min="1" max="100" style="width:52px;border:0.5px solid var(--border-strong);border-radius:6px;padding:4px 6px;font-size:13px;text-align:center;background:var(--surface);color:var(--text-primary)" onchange="saveReevalThreshold(this.value)"/>
             <span style="font-size:12px;color:var(--text-secondary)">visits</span>
           </div>
         </div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Track visit counts per patient and get notified when they hit your re-eval milestone. Update visit counts below as patients come in.</div>
-        <div id="reevalList"><div class="empty-state"><i class="ti ti-users"></i>Add patients in Memberships first</div></div>
+        <div style="font-size:12px;color:var(--text-secondary)">Visit counts are tracked automatically when patients check in. Alerts appear here when anyone hits the threshold.</div>
       </div>
-
-      <div class="card">
-        <div class="card-header"><div class="card-title">Dismissed alerts</div><button class="sm-btn" onclick="clearDismissed()" style="font-size:11px">Clear all</button></div>
-        <div id="dismissedList"><div class="empty-state" style="padding:16px"><i class="ti ti-check"></i>Nothing dismissed yet</div></div>
+      <div id="alertsContent">
+        <div class="empty-state" style="padding:48px 20px">
+          <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
+          No alerts right now — you're all caught up!
+        </div>
       </div>
     </div>
 
@@ -369,31 +368,31 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
     <!-- CHECK-IN -->
     <div class="page" id="page-checkin">
       <div class="page-title">Check-in kiosk</div>
-      <div class="page-sub">Print the QR code for your desk — patients scan to join the queue</div>
-      <div class="kiosk-grid">
-        <div class="qr-panel">
-          <div style="font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:4px" id="qr-practice-name">Your Practice</div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:20px">Scan to check in for your appointment</div>
-          <div class="qr-frame" id="qrCodeContainer"></div>
-          <div class="url-pill" id="qr-url-pill">Set your URL in Settings</div>
-          <div style="font-size:11px;color:var(--text-hint);margin-top:8px">No app needed · works on any phone</div>
-          <button class="print-btn" onclick="printQR()"><i class="ti ti-printer"></i> Print QR code</button>
-        </div>
-        <div class="card" style="margin-bottom:0">
-          <div class="card-header">
-            <div class="card-title">Live waiting queue</div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span class="badge b-honey" id="queueBadge">0 waiting</span>
-              <button class="sm-btn" onclick="clearQueue()" style="font-size:11px;color:#a0402a;border-color:#d4a090" title="Clear today's queue"><i class="ti ti-trash" style="font-size:12px"></i> Clear</button>
-            </div>
+      <div class="page-sub">Patients scan your printed QR code to join the queue</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Live waiting queue</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge b-honey" id="queueBadge">0 waiting</span>
+            <button class="sm-btn" onclick="clearQueue()" style="font-size:11px;color:#a0402a;border-color:#d4a090" title="Clear today's queue"><i class="ti ti-trash" style="font-size:12px"></i> Clear</button>
           </div>
-          <div class="queue-list" id="kioskQueue"><div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div></div>
-          <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px">
-            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Manual check-in</div>
-            <div style="display:flex;gap:8px">
-              <input type="text" id="kioskName" placeholder="Patient full name" class="field-input" style="margin-bottom:0;flex:1"/>
-              <button class="primary-btn" style="padding:8px 14px;white-space:nowrap" onclick="kioskCheckIn()"><i class="ti ti-check"></i> Check in</button>
-            </div>
+        </div>
+
+        <!-- URL pill — subtle reference link -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:8px 12px;background:var(--linen);border-radius:8px">
+          <i class="ti ti-qrcode" style="font-size:14px;color:var(--text-hint)"></i>
+          <span style="font-size:12px;color:var(--text-secondary)">Check-in URL:</span>
+          <span class="url-pill" id="qr-url-pill" style="margin-top:0;background:none;padding:0;font-size:12px">Set your URL in Settings</span>
+          <button class="sm-btn" style="font-size:11px;margin-left:auto" onclick="printQR()"><i class="ti ti-printer" style="font-size:12px"></i> Reprint QR</button>
+        </div>
+
+        <div class="queue-list" id="kioskQueue"><div class="empty-state"><i class="ti ti-clock"></i>Queue is empty — patients will appear here when they scan in</div></div>
+
+        <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Manual check-in</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="kioskName" placeholder="Patient full name" class="field-input" style="margin-bottom:0;flex:1"/>
+            <button class="primary-btn" style="padding:8px 14px;white-space:nowrap" onclick="kioskCheckIn()"><i class="ti ti-check"></i> Check in</button>
           </div>
         </div>
       </div>
@@ -665,7 +664,8 @@ function updateLabels(){
   document.getElementById('sidebar-practice-name').textContent=n;
   document.getElementById('dash-title').textContent=n+' — overview';
   document.getElementById('dash-sub').textContent=m+' · cash-based membership practice';
-  document.getElementById('qr-practice-name').textContent=n;
+  const qrName=document.getElementById('qr-practice-name');
+  if(qrName)qrName.textContent=n;
 }
 
 function loadSettings(){
@@ -1165,6 +1165,7 @@ async function kioskCheckIn(){
     queue.unshift(dbQueueToApp(data));
     document.getElementById('kioskName').value='';
     renderKioskQueue();renderDashboard();
+    trackVisitForPatient(name);
     showToast(name+' checked in');
   }catch(err){console.log('Check-in error:',err);showToast('Could not check in — try again');}
 }
@@ -1290,22 +1291,27 @@ function renderSendHistory(){
 
 // ── DROPDOWNS ─────────────────────────────────────────────────────────
 // ── RE-EVAL ALERT SYSTEM ──────────────────────────────────────────────
-// Visit counts and dismissed alerts stored in localStorage
-// (lightweight — doesn't need to sync cross-device for this use case)
+// ── RE-EVAL ALERT SYSTEM ──────────────────────────────────────────────
+// Visit counts tracked per individual patient name (auto from check-in)
+// Stored in localStorage — lightweight, desk-computer only
 
-function getReevalData(){
-  return JSON.parse(localStorage.getItem('sp_reeval')||'{}');
-}
-function saveReevalData(data){
-  localStorage.setItem('sp_reeval',JSON.stringify(data));
-}
 function getReevalThreshold(){
   return parseInt(localStorage.getItem('sp_reeval_threshold')||'15');
 }
 function saveReevalThreshold(val){
-  localStorage.setItem('sp_reeval_threshold',Math.max(1,parseInt(val)||15));
+  const n=Math.max(1,parseInt(val)||15);
+  localStorage.setItem('sp_reeval_threshold',n);
+  const inp=document.getElementById('reeval-threshold');
+  if(inp)inp.value=n;
   renderAlerts();
-  showToast('Re-eval threshold set to '+val+' visits');
+  showToast('Re-eval alert set to every '+n+' visits');
+}
+
+function getVisitCounts(){
+  return JSON.parse(localStorage.getItem('sp_visit_counts')||'{}');
+}
+function saveVisitCounts(data){
+  localStorage.setItem('sp_visit_counts',JSON.stringify(data));
 }
 function getDismissed(){
   return JSON.parse(localStorage.getItem('sp_dismissed')||'{}');
@@ -1314,35 +1320,27 @@ function saveDismissed(data){
   localStorage.setItem('sp_dismissed',JSON.stringify(data));
 }
 
-function incrementVisit(subId,name){
-  const data=getReevalData();
-  const key='sub_'+subId;
-  data[key]=(data[key]||0)+1;
-  saveReevalData(data);
-  // Un-dismiss if they've had enough visits since last re-eval
+// Called automatically when a patient checks in (from kioskCheckIn and pollSheetQueue)
+function trackVisitForPatient(name){
+  if(!name)return;
+  const key=name.trim().toLowerCase();
+  const counts=getVisitCounts();
+  counts[key]=(counts[key]||0)+1;
+  saveVisitCounts(counts);
   const threshold=getReevalThreshold();
-  if(data[key]%threshold===0){
+  if(counts[key]%threshold===0){
+    // Clear any existing dismissal for this milestone so the alert reappears
     const dismissed=getDismissed();
-    delete dismissed[key+'_'+data[key]];
+    const milestoneKey=key+'_'+counts[key];
+    delete dismissed[milestoneKey];
     saveDismissed(dismissed);
-    showToast(name+' is due for a re-eval! ('+data[key]+' visits)');
-  } else {
-    showToast(name+': visit '+data[key]+' recorded');
   }
   renderAlerts();
 }
 
-function decrementVisit(subId){
-  const data=getReevalData();
-  const key='sub_'+subId;
-  if((data[key]||0)>0)data[key]--;
-  saveReevalData(data);
-  renderAlerts();
-}
-
-function dismissAlert(key,visitNum){
+function dismissAlert(nameKey,milestone){
   const dismissed=getDismissed();
-  dismissed[key+'_'+visitNum]=Date.now();
+  dismissed[nameKey+'_'+milestone]=true;
   saveDismissed(dismissed);
   renderAlerts();
   showToast('Alert dismissed');
@@ -1351,109 +1349,83 @@ function dismissAlert(key,visitNum){
 function clearDismissed(){
   localStorage.removeItem('sp_dismissed');
   renderAlerts();
-  showToast('Dismissed alerts cleared');
+  showToast('All dismissed alerts cleared');
 }
 
 function renderAlerts(){
   const threshold=getReevalThreshold();
-  const data=getReevalData();
+  const counts=getVisitCounts();
   const dismissed=getDismissed();
 
   // Update threshold input
   const inp=document.getElementById('reeval-threshold');
   if(inp)inp.value=threshold;
 
-  // Build patient list from active subs
-  const activeSubs=subs.filter(s=>s.active&&!s.needsPlan);
+  // Build list of all known individual patients
+  // Sources: primary holders, dependents from active subs, punch pass holders
+  const individuals=[];
+  subs.filter(s=>s.active&&!s.needsPlan).forEach(s=>{
+    if(s.primary)individuals.push({name:s.primary,plan:plans.find(p=>p.id===s.planId),group:s.groupName});
+    (s.members||[]).forEach(m=>{
+      if(m)individuals.push({name:m,plan:plans.find(p=>p.id===s.planId),group:s.groupName});
+    });
+  });
+  passes.filter(p=>p.active).forEach(p=>{
+    if(p.primary||p.name)individuals.push({name:p.primary||p.name,plan:null,group:p.name+' (pass)'});
+    (p.members||[]).forEach(m=>{
+      if(m)individuals.push({name:m,plan:null,group:p.name+' (pass)'});
+    });
+  });
 
-  if(!activeSubs.length){
-    document.getElementById('reevalList').innerHTML='<div class="empty-state"><i class="ti ti-users"></i>Add patients in Memberships first</div>';
+  // Categorise alerts
+  const dueAlerts=[];
+  individuals.forEach(ind=>{
+    const key=ind.name.trim().toLowerCase();
+    const visits=counts[key]||0;
+    if(visits>0&&visits%threshold===0){
+      const milestoneKey=key+'_'+visits;
+      if(!dismissed[milestoneKey]){
+        dueAlerts.push({...ind,key,visits,milestone:visits});
+      }
+    }
+  });
+
+  // Update sidebar dot
+  const alertDot=document.getElementById('alertDot');
+  if(alertDot)alertDot.style.display=dueAlerts.length?'block':'none';
+
+  const container=document.getElementById('alertsContent');
+  if(!container)return;
+
+  if(!dueAlerts.length){
+    container.innerHTML=`<div class="empty-state" style="padding:48px 20px">
+      <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
+      No alerts right now — you're all caught up!
+    </div>`;
     return;
   }
 
-  const dueForReeval=[];
-  const notDue=[];
-
-  activeSubs.forEach(s=>{
-    const key='sub_'+s.id;
-    const visits=data[key]||0;
-    const nextReeval=Math.ceil((visits+1)/threshold)*threshold;
-    const visitsUntil=nextReeval-visits;
-    const isDue=visits>0&&visits%threshold===0;
-    const dismissKey=key+'_'+visits;
-    const isDismissed=!!dismissed[dismissKey];
-    const plan=plans.find(p=>p.id===s.planId);
-    const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-    const ci=plan?plans.indexOf(plan):0;
-
-    const row={s,key,visits,visitsUntil,isDue,isDismissed,dismissKey,plan,initials,ci};
-    if(isDue&&!isDismissed) dueForReeval.push(row);
-    else notDue.push(row);
-  });
-
-  // Update alert dot on sidebar
-  const alertDot=document.getElementById('alertDot');
-  if(alertDot) alertDot.style.display=dueForReeval.length?'block':'none';
-
-  let html='';
-
-  // Due for re-eval (shown prominently at top)
-  if(dueForReeval.length){
-    html+=`<div style="font-size:12px;font-weight:500;color:var(--rook);margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="ti ti-alert-circle" style="font-size:14px"></i>${dueForReeval.length} patient${dueForReeval.length!==1?'s':''} due for re-eval</div>`;
-    html+=dueForReeval.map(({s,key,visits,dismissKey,plan,initials,ci})=>`
-      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:9px;background:#f5ddd8;border:0.5px solid #d4a090;margin-bottom:7px">
-        <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${initials}</div>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${s.groupName} <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#f5ddd8;color:#7a2e1e;margin-left:4px">🔔 Re-eval due at visit ${visits}</span></div>
-          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${plan?plan.name:'No plan'} · ${visits} visits total</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          <button class="sm-btn" style="font-size:11px" onclick="decrementVisit(${s.id})"><i class="ti ti-minus" style="font-size:11px"></i></button>
-          <span style="font-size:13px;font-weight:500;min-width:28px;text-align:center">${visits}</span>
-          <button class="sm-btn" style="font-size:11px" onclick="incrementVisit(${s.id},'${s.groupName.replace(/'/g,"\\'")}')"><i class="ti ti-plus" style="font-size:11px"></i></button>
-          <button class="sm-btn primary" style="font-size:11px;margin-left:4px" onclick="dismissAlert('${key}',${visits})">Dismiss</button>
-        </div>
-      </div>`).join('');
-    html+='<div style="height:10px"></div>';
-  }
-
-  // All other patients
-  html+=`<div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px">All patients</div>`;
-  html+=notDue.map(({s,visits,visitsUntil,plan,initials,ci})=>`
-    <div class="queue-item" style="margin-bottom:7px">
-      <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${initials}</div>
-      <div class="q-info">
-        <div class="q-name">${s.groupName}</div>
-        <div class="q-detail">${plan?plan.name:'No plan'} · ${visits} visits · re-eval in ${visitsUntil} visit${visitsUntil!==1?'s':''}</div>
+  container.innerHTML=`
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Re-eval due</div>
+        <span class="badge b-red">${dueAlerts.length} patient${dueAlerts.length!==1?'s':''}</span>
       </div>
-      <div style="display:flex;gap:5px;align-items:center">
-        <button class="sm-btn" style="font-size:11px;padding:4px 7px" onclick="decrementVisit(${s.id})"><i class="ti ti-minus" style="font-size:11px"></i></button>
-        <span style="font-size:13px;font-weight:500;min-width:28px;text-align:center">${visits}</span>
-        <button class="sm-btn" style="font-size:11px;padding:4px 7px" onclick="incrementVisit(${s.id},'${s.groupName.replace(/'/g,"\\'")}')"><i class="ti ti-plus" style="font-size:11px"></i></button>
-      </div>
-    </div>`).join('');
-
-  document.getElementById('reevalList').innerHTML=html||'<div class="empty-state"><i class="ti ti-check"></i>No patients to show</div>';
-
-  // Dismissed list
-  const dismissedKeys=Object.keys(dismissed);
-  if(!dismissedKeys.length){
-    document.getElementById('dismissedList').innerHTML='<div class="empty-state" style="padding:16px"><i class="ti ti-check"></i>Nothing dismissed yet</div>';
-  } else {
-    document.getElementById('dismissedList').innerHTML=dismissedKeys.map(k=>{
-      const subId=parseInt(k.split('_')[1]);
-      const s=subs.find(x=>x.id===subId);
-      const visitNum=k.split('_')[2];
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:7px;background:var(--surface);margin-bottom:5px;font-size:12px">
-        <i class="ti ti-bell-off" style="font-size:14px;color:var(--text-hint)"></i>
-        <div style="flex:1;color:var(--text-secondary)">${s?s.groupName:'Unknown'} — re-eval at visit ${visitNum}</div>
-        <button class="sm-btn" style="font-size:11px" onclick="(function(){const d=JSON.parse(localStorage.getItem('sp_dismissed')||'{}');delete d['${k}'];localStorage.setItem('sp_dismissed',JSON.stringify(d));renderAlerts();showToast('Restored')})()">Restore</button>
-      </div>`;
-    }).join('');
-  }
+      ${dueAlerts.map(a=>{
+        const initials=a.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const planName=a.plan?a.plan.name:'Punch pass';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:9px;background:#f5ddd8;border:0.5px solid #d4a090;margin-bottom:7px">
+          <div class="avatar" style="background:#f0e0d4;color:#5a2e12">${initials}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${a.name}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${planName} · ${a.group} · ${a.visits} visits — re-eval due</div>
+          </div>
+          <button class="sm-btn primary" style="font-size:12px;white-space:nowrap" onclick="dismissAlert('${a.key}',${a.milestone})"><i class="ti ti-check" style="font-size:12px"></i> Done</button>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 // ── END RE-EVAL SYSTEM ─────────────────────────────────────────────────
-
 function showToast(msg){
   const t=document.getElementById('toast');
   const m=document.getElementById('toastMsg');
@@ -1821,6 +1793,7 @@ function pollSheetQueue(){
             if(error)throw error;
             queue.push(dbQueueToApp(inserted));
             existing.push(name.toLowerCase());
+            trackVisitForPatient(name);
             added++;
           }catch(err){console.log('Queue insert error:',err);}
         }
