@@ -183,7 +183,7 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
     <nav class="nav">
       <div class="nav-section">Overview</div>
       <div class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
-      <div class="nav-item" onclick="nav('alerts',this)"><i class="ti ti-bell"></i> Alerts</div>
+      <div class="nav-item" onclick="nav('alerts',this)"><i class="ti ti-bell"></i> Alerts <div class="alert-dot" id="alertDot" style="display:none"></div></div>
       <div class="nav-section">Patients</div>
       <div class="nav-item" onclick="nav('memberships',this)"><i class="ti ti-id-badge"></i> Memberships</div>
       <div class="nav-item" onclick="nav('checkin',this)"><i class="ti ti-scan"></i> Check-in kiosk</div>
@@ -248,12 +248,24 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
     <!-- ALERTS -->
     <div class="page" id="page-alerts">
       <div class="page-title">Alerts &amp; reminders</div>
-      <div class="page-sub">Automated flags that need your attention</div>
-      <div id="alertsContent">
-        <div class="empty-state" style="padding:48px 20px">
-          <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
-          No alerts right now — you're all caught up!
+      <div class="page-sub">Re-eval reminders and automated flags</div>
+
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-header">
+          <div class="card-title">Re-eval tracker</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--text-secondary)">Alert every</span>
+            <input type="number" id="reeval-threshold" value="15" min="1" max="100" style="width:52px;border:0.5px solid var(--border-strong);border-radius:6px;padding:4px 6px;font-size:13px;text-align:center;background:var(--surface);color:var(--text-primary)" onchange="saveReevalThreshold(this.value)"/>
+            <span style="font-size:12px;color:var(--text-secondary)">visits</span>
+          </div>
         </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Track visit counts per patient and get notified when they hit your re-eval milestone. Update visit counts below as patients come in.</div>
+        <div id="reevalList"><div class="empty-state"><i class="ti ti-users"></i>Add patients in Memberships first</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><div class="card-title">Dismissed alerts</div><button class="sm-btn" onclick="clearDismissed()" style="font-size:11px">Clear all</button></div>
+        <div id="dismissedList"><div class="empty-state" style="padding:16px"><i class="ti ti-check"></i>Nothing dismissed yet</div></div>
       </div>
     </div>
 
@@ -368,7 +380,13 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
           <button class="print-btn" onclick="printQR()"><i class="ti ti-printer"></i> Print QR code</button>
         </div>
         <div class="card" style="margin-bottom:0">
-          <div class="card-header"><div class="card-title">Live waiting queue</div><span class="badge b-honey" id="queueBadge">0 waiting</span></div>
+          <div class="card-header">
+            <div class="card-title">Live waiting queue</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="badge b-honey" id="queueBadge">0 waiting</span>
+              <button class="sm-btn" onclick="clearQueue()" style="font-size:11px;color:#a0402a;border-color:#d4a090" title="Clear today's queue"><i class="ti ti-trash" style="font-size:12px"></i> Clear</button>
+            </div>
+          </div>
           <div class="queue-list" id="kioskQueue"><div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div></div>
           <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px">
             <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Manual check-in</div>
@@ -635,6 +653,7 @@ function nav(id,el){
   closeAllMenus();
   if(id==='memberships')renderMemberships();
   if(id==='checkin'){renderKioskQueue();refreshQR();}
+  if(id==='alerts')renderAlerts();
   if(id==='janesync')renderSyncHistory();
   if(id==='sms')buildSmsAudience();
   if(id==='dashboard')renderDashboard();
@@ -1150,6 +1169,21 @@ async function kioskCheckIn(){
   }catch(err){console.log('Check-in error:',err);showToast('Could not check in — try again');}
 }
 
+async function clearQueue(){
+  if(!confirm('Clear today\'s queue? This removes all check-ins from the screen but keeps them in your Google Sheet for records.'))return;
+  try{
+    const{error}=await sb.from('queue').delete().neq('id',0);
+    if(error)throw error;
+    queue=[];
+    renderKioskQueue();
+    renderDashboard();
+    showToast('Queue cleared');
+  }catch(err){
+    console.log('Clear queue error:',err);
+    showToast('Could not clear queue');
+  }
+}
+
 // ── SMS ───────────────────────────────────────────────────────────────
 function getAudiencePhones(v){
   const nums=new Set();
@@ -1255,6 +1289,171 @@ function renderSendHistory(){
 }
 
 // ── DROPDOWNS ─────────────────────────────────────────────────────────
+// ── RE-EVAL ALERT SYSTEM ──────────────────────────────────────────────
+// Visit counts and dismissed alerts stored in localStorage
+// (lightweight — doesn't need to sync cross-device for this use case)
+
+function getReevalData(){
+  return JSON.parse(localStorage.getItem('sp_reeval')||'{}');
+}
+function saveReevalData(data){
+  localStorage.setItem('sp_reeval',JSON.stringify(data));
+}
+function getReevalThreshold(){
+  return parseInt(localStorage.getItem('sp_reeval_threshold')||'15');
+}
+function saveReevalThreshold(val){
+  localStorage.setItem('sp_reeval_threshold',Math.max(1,parseInt(val)||15));
+  renderAlerts();
+  showToast('Re-eval threshold set to '+val+' visits');
+}
+function getDismissed(){
+  return JSON.parse(localStorage.getItem('sp_dismissed')||'{}');
+}
+function saveDismissed(data){
+  localStorage.setItem('sp_dismissed',JSON.stringify(data));
+}
+
+function incrementVisit(subId,name){
+  const data=getReevalData();
+  const key='sub_'+subId;
+  data[key]=(data[key]||0)+1;
+  saveReevalData(data);
+  // Un-dismiss if they've had enough visits since last re-eval
+  const threshold=getReevalThreshold();
+  if(data[key]%threshold===0){
+    const dismissed=getDismissed();
+    delete dismissed[key+'_'+data[key]];
+    saveDismissed(dismissed);
+    showToast(name+' is due for a re-eval! ('+data[key]+' visits)');
+  } else {
+    showToast(name+': visit '+data[key]+' recorded');
+  }
+  renderAlerts();
+}
+
+function decrementVisit(subId){
+  const data=getReevalData();
+  const key='sub_'+subId;
+  if((data[key]||0)>0)data[key]--;
+  saveReevalData(data);
+  renderAlerts();
+}
+
+function dismissAlert(key,visitNum){
+  const dismissed=getDismissed();
+  dismissed[key+'_'+visitNum]=Date.now();
+  saveDismissed(dismissed);
+  renderAlerts();
+  showToast('Alert dismissed');
+}
+
+function clearDismissed(){
+  localStorage.removeItem('sp_dismissed');
+  renderAlerts();
+  showToast('Dismissed alerts cleared');
+}
+
+function renderAlerts(){
+  const threshold=getReevalThreshold();
+  const data=getReevalData();
+  const dismissed=getDismissed();
+
+  // Update threshold input
+  const inp=document.getElementById('reeval-threshold');
+  if(inp)inp.value=threshold;
+
+  // Build patient list from active subs
+  const activeSubs=subs.filter(s=>s.active&&!s.needsPlan);
+
+  if(!activeSubs.length){
+    document.getElementById('reevalList').innerHTML='<div class="empty-state"><i class="ti ti-users"></i>Add patients in Memberships first</div>';
+    return;
+  }
+
+  const dueForReeval=[];
+  const notDue=[];
+
+  activeSubs.forEach(s=>{
+    const key='sub_'+s.id;
+    const visits=data[key]||0;
+    const nextReeval=Math.ceil((visits+1)/threshold)*threshold;
+    const visitsUntil=nextReeval-visits;
+    const isDue=visits>0&&visits%threshold===0;
+    const dismissKey=key+'_'+visits;
+    const isDismissed=!!dismissed[dismissKey];
+    const plan=plans.find(p=>p.id===s.planId);
+    const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const ci=plan?plans.indexOf(plan):0;
+
+    const row={s,key,visits,visitsUntil,isDue,isDismissed,dismissKey,plan,initials,ci};
+    if(isDue&&!isDismissed) dueForReeval.push(row);
+    else notDue.push(row);
+  });
+
+  // Update alert dot on sidebar
+  const alertDot=document.getElementById('alertDot');
+  if(alertDot) alertDot.style.display=dueForReeval.length?'block':'none';
+
+  let html='';
+
+  // Due for re-eval (shown prominently at top)
+  if(dueForReeval.length){
+    html+=`<div style="font-size:12px;font-weight:500;color:var(--rook);margin-bottom:8px;display:flex;align-items:center;gap:6px"><i class="ti ti-alert-circle" style="font-size:14px"></i>${dueForReeval.length} patient${dueForReeval.length!==1?'s':''} due for re-eval</div>`;
+    html+=dueForReeval.map(({s,key,visits,dismissKey,plan,initials,ci})=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:9px;background:#f5ddd8;border:0.5px solid #d4a090;margin-bottom:7px">
+        <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${initials}</div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${s.groupName} <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#f5ddd8;color:#7a2e1e;margin-left:4px">🔔 Re-eval due at visit ${visits}</span></div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${plan?plan.name:'No plan'} · ${visits} visits total</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="sm-btn" style="font-size:11px" onclick="decrementVisit(${s.id})"><i class="ti ti-minus" style="font-size:11px"></i></button>
+          <span style="font-size:13px;font-weight:500;min-width:28px;text-align:center">${visits}</span>
+          <button class="sm-btn" style="font-size:11px" onclick="incrementVisit(${s.id},'${s.groupName.replace(/'/g,"\\'")}')"><i class="ti ti-plus" style="font-size:11px"></i></button>
+          <button class="sm-btn primary" style="font-size:11px;margin-left:4px" onclick="dismissAlert('${key}',${visits})">Dismiss</button>
+        </div>
+      </div>`).join('');
+    html+='<div style="height:10px"></div>';
+  }
+
+  // All other patients
+  html+=`<div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px">All patients</div>`;
+  html+=notDue.map(({s,visits,visitsUntil,plan,initials,ci})=>`
+    <div class="queue-item" style="margin-bottom:7px">
+      <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${initials}</div>
+      <div class="q-info">
+        <div class="q-name">${s.groupName}</div>
+        <div class="q-detail">${plan?plan.name:'No plan'} · ${visits} visits · re-eval in ${visitsUntil} visit${visitsUntil!==1?'s':''}</div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center">
+        <button class="sm-btn" style="font-size:11px;padding:4px 7px" onclick="decrementVisit(${s.id})"><i class="ti ti-minus" style="font-size:11px"></i></button>
+        <span style="font-size:13px;font-weight:500;min-width:28px;text-align:center">${visits}</span>
+        <button class="sm-btn" style="font-size:11px;padding:4px 7px" onclick="incrementVisit(${s.id},'${s.groupName.replace(/'/g,"\\'")}')"><i class="ti ti-plus" style="font-size:11px"></i></button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('reevalList').innerHTML=html||'<div class="empty-state"><i class="ti ti-check"></i>No patients to show</div>';
+
+  // Dismissed list
+  const dismissedKeys=Object.keys(dismissed);
+  if(!dismissedKeys.length){
+    document.getElementById('dismissedList').innerHTML='<div class="empty-state" style="padding:16px"><i class="ti ti-check"></i>Nothing dismissed yet</div>';
+  } else {
+    document.getElementById('dismissedList').innerHTML=dismissedKeys.map(k=>{
+      const subId=parseInt(k.split('_')[1]);
+      const s=subs.find(x=>x.id===subId);
+      const visitNum=k.split('_')[2];
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:7px;background:var(--surface);margin-bottom:5px;font-size:12px">
+        <i class="ti ti-bell-off" style="font-size:14px;color:var(--text-hint)"></i>
+        <div style="flex:1;color:var(--text-secondary)">${s?s.groupName:'Unknown'} — re-eval at visit ${visitNum}</div>
+        <button class="sm-btn" style="font-size:11px" onclick="(function(){const d=JSON.parse(localStorage.getItem('sp_dismissed')||'{}');delete d['${k}'];localStorage.setItem('sp_dismissed',JSON.stringify(d));renderAlerts();showToast('Restored')})()">Restore</button>
+      </div>`;
+    }).join('');
+  }
+}
+// ── END RE-EVAL SYSTEM ─────────────────────────────────────────────────
+
 function showToast(msg){
   const t=document.getElementById('toast');
   const m=document.getElementById('toastMsg');
@@ -1640,7 +1839,7 @@ function pollSheetQueue(){
 window.onload=async function(){
   showToast('Loading your data…');
   await loadAllData();
-  updateLabels();renderDashboard();refreshQR();renderSyncHistory();startPolling();
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
