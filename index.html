@@ -297,6 +297,9 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
             <button class="m-tab" id="mtab-inactive" onclick="showMTab('inactive',this)">
               <i class="ti ti-user-off" style="font-size:14px"></i> Inactive <span class="m-tab-count" id="mtab-count-inactive">0</span>
             </button>
+            <button class="m-tab" id="mtab-frozen" onclick="showMTab('frozen',this)">
+              <i class="ti ti-snowflake" style="font-size:14px"></i> Frozen <span class="m-tab-count" id="mtab-count-frozen">0</span>
+            </button>
             <button class="m-tab" id="mtab-plans" onclick="showMTab('plans',this)">
               <i class="ti ti-layout-grid" style="font-size:14px"></i> Plans <span class="m-tab-count" id="mtab-count-plans">0</span>
             </button>
@@ -347,6 +350,18 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
             <span class="badge b-gray" id="inactive-count-badge">0 inactive</span>
           </div>
           <div id="inactiveList"><div class="empty-state"><i class="ti ti-user-off"></i>No inactive patients</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: FROZEN -->
+      <div id="mview-frozen" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Frozen plans</div>
+            <span class="badge" style="background:#dbeafe;color:#1e40af" id="frozen-count-badge">0 frozen</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Patients whose plans are temporarily paused. They can be moved back to Active when they return.</div>
+          <div id="frozenList"><div class="empty-state"><i class="ti ti-snowflake"></i>No frozen plans</div></div>
         </div>
       </div>
 
@@ -600,7 +615,7 @@ let dataReady=false;
 
 // ── Map DB rows (snake_case) <-> app objects (camelCase) ──────────────
 function dbPlanToApp(r){return {id:r.id,name:r.name,price:Number(r.price),maxMembers:r.max_members};}
-function dbSubToApp(r){return {id:r.id,groupName:r.group_name,planId:r.plan_id,fee:Number(r.fee),primary:r.primary_holder,phone:r.phone,members:r.members||[],since:r.since,active:r.active,needsPlan:r.needs_plan};}
+function dbSubToApp(r){return {id:r.id,groupName:r.group_name,planId:r.plan_id,fee:Number(r.fee),primary:r.primary_holder,phone:r.phone,members:r.members||[],since:r.since,active:r.active,needsPlan:r.needs_plan,frozen:r.frozen||false};}
 function dbPassToApp(r){return {id:r.id,name:r.name,primary:r.primary_holder,phone:r.phone,members:r.members||[],visits:r.visits,date:r.purchase_date,active:r.active};}
 function dbQueueToApp(r){return {id:r.id,name:r.name,time:r.time_label,status:r.status,visitCount:r.visit_count};}
 function dbSettingsToApp(r){return {practiceName:r.practice_name,phone:r.phone,checkinUrl:r.checkin_url,overagePrice:r.overage_price,twilioSid:r.twilio_sid,twilioToken:r.twilio_token,twilioPhone:r.twilio_phone,janeSubdomain:r.jane_subdomain,janeKey:r.jane_key,appsScriptUrl:r.apps_script_url};}
@@ -904,19 +919,133 @@ async function reactivatePatient(subId){
   const s=subs.find(x=>x.id===subId);
   if(!s)return;
   try{
-    const{error}=await sb.from('subscriptions').update({active:true,needs_plan:true}).eq('id',subId);
+    const{error}=await sb.from('subscriptions').update({active:true,needs_plan:false}).eq('id',subId);
     if(error)throw error;
     s.active=true;
-    s.needsPlan=true;
+    s.needsPlan=false;
     renderMemberships();renderDashboard();
-    showToast(s.groupName+' reactivated — sort them in the Patients tab');
+    showToast(s.groupName+' moved to Active');
   }catch(err){console.log('Reactivate error:',err);showToast('Could not reactivate patient');}
 }
 
+// Move an active subscription to punch pass or inactive
+async function moveSubscription(subId,destination){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    if(destination==='inactive'){
+      const{error}=await sb.from('subscriptions').update({active:false,needs_plan:false}).eq('id',subId);
+      if(error)throw error;
+      s.active=false;s.needsPlan=false;
+      renderMemberships();renderDashboard();
+      showToast(s.groupName+' moved to Inactive');
+    } else if(destination==='punch'){
+      // Create a new punch pass from this subscription
+      const passRow={name:s.groupName,primary_holder:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,purchase_date:null,active:true};
+      const{data,error}=await sb.from('punch_passes').insert(passRow).select().single();
+      if(error)throw error;
+      passes.push(dbPassToApp(data));
+      // Mark the subscription inactive
+      const{error:err2}=await sb.from('subscriptions').update({active:false,needs_plan:false}).eq('id',subId);
+      if(err2)throw err2;
+      s.active=false;s.needsPlan=false;
+      renderMemberships();renderDashboard();
+      showToast(s.groupName+' moved to Punch passes');
+    }
+  }catch(err){console.log('Move subscription error:',err);showToast('Could not move patient');}
+}
+
+// Move a punch pass to active subscription or inactive
+async function movePass(passId,destination){
+  closeAllMenus();
+  const p=passes.find(x=>x.id===passId);
+  if(!p)return;
+  try{
+    if(destination==='inactive'){
+      const{error}=await sb.from('punch_passes').update({active:false}).eq('id',passId);
+      if(error)throw error;
+      p.active=false;
+      renderMemberships();renderDashboard();
+      showToast(p.name+' moved to Inactive');
+    } else if(destination==='active'){
+      // Create a new subscription placeholder
+      const row={group_name:p.name,plan_id:null,fee:0,primary_holder:p.primary||p.name,phone:p.phone,members:p.members||[],since:null,active:true,needs_plan:true};
+      const{data,error}=await sb.from('subscriptions').insert(row).select().single();
+      if(error)throw error;
+      subs.push(dbSubToApp(data));
+      // Deactivate the pass
+      const{error:err2}=await sb.from('punch_passes').update({active:false}).eq('id',passId);
+      if(err2)throw err2;
+      p.active=false;
+      renderMemberships();renderDashboard();
+      showToast(p.name+' moved to Active — assign a plan in the Patients tab');
+    }
+  }catch(err){console.log('Move pass error:',err);showToast('Could not move patient');}
+}
+
+// Move an inactive subscription directly to punch pass
+async function moveInactiveToPass(subId){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const passRow={name:s.groupName,primary_holder:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,purchase_date:null,active:true};
+    const{data,error}=await sb.from('punch_passes').insert(passRow).select().single();
+    if(error)throw error;
+    passes.push(dbPassToApp(data));
+    const{error:err2}=await sb.from('subscriptions').delete().eq('id',subId);
+    if(err2)throw err2;
+    subs=subs.filter(x=>x.id!==subId);
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' moved to Punch passes');
+  }catch(err){console.log('Move inactive to pass error:',err);showToast('Could not move patient');}
+}
+
+async function freezeSubscription(subId){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({frozen:true}).eq('id',subId);
+    if(error)throw error;
+    s.frozen=true;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' plan frozen');
+  }catch(err){console.log('Freeze error:',err);showToast('Could not freeze plan');}
+}
+
+async function unfreezeSubscription(subId){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({frozen:false,active:true,needs_plan:false}).eq('id',subId);
+    if(error)throw error;
+    s.frozen=false;s.active=true;s.needsPlan=false;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' plan unfrozen — moved back to Active');
+  }catch(err){console.log('Unfreeze error:',err);showToast('Could not unfreeze plan');}
+}
+
+async function moveFromFrozen(subId,destination){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({frozen:false,active:false,needs_plan:false}).eq('id',subId);
+    if(error)throw error;
+    s.frozen=false;s.active=false;s.needsPlan=false;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' moved to Inactive');
+  }catch(err){console.log('Move from frozen error:',err);showToast('Could not move patient');}
+}
+
 function renderMemberships(){
-  const assigned=subs.filter(s=>s.active&&!s.needsPlan);
-  const unassigned=subs.filter(s=>s.active&&s.needsPlan);
-  const inactiveSubs=subs.filter(s=>!s.active);
+  const assigned=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen);
+  const unassigned=subs.filter(s=>s.active&&s.needsPlan&&!s.frozen);
+  const inactiveSubs=subs.filter(s=>!s.active&&!s.frozen);
+  const frozenSubs=subs.filter(s=>s.frozen);
   const totalSubs=assigned.length;
   const totalPts=assigned.reduce((a,s)=>a+1+(s.members||[]).length,0);
   const totalMRR=assigned.reduce((a,s)=>a+s.fee,0);
@@ -931,6 +1060,7 @@ function renderMemberships(){
   document.getElementById('mtab-count-active').textContent=totalSubs;
   document.getElementById('mtab-count-punch').textContent=passCount;
   document.getElementById('mtab-count-inactive').textContent=inactiveSubs.length;
+  document.getElementById('mtab-count-frozen').textContent=frozenSubs.length;
   document.getElementById('mtab-count-plans').textContent=plans.length;
 
   const cnt=document.getElementById('mtab-count-patients');
@@ -993,6 +1123,10 @@ function renderMemberships(){
               <div class="dropdown" id="menu-sub-${s.id}">
                 <div class="dropdown-item" onclick="openSubModal(${s.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit subscription</div>
                 <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="freezeSubscription(${s.id})"><i class="ti ti-snowflake" style="font-size:14px"></i> Freeze plan</div>
+                <div class="dropdown-item" onclick="moveSubscription(${s.id},'punch')"><i class="ti ti-ticket" style="font-size:14px"></i> Move to Punch pass</div>
+                <div class="dropdown-item" onclick="moveSubscription(${s.id},'inactive')"><i class="ti ti-user-off" style="font-size:14px"></i> Move to Inactive</div>
+                <div class="dropdown-divider"></div>
                 <div class="dropdown-item danger" onclick="deleteSub(${s.id})"><i class="ti ti-trash" style="font-size:14px"></i> Remove</div>
               </div>
             </div>
@@ -1035,6 +1169,9 @@ function renderMemberships(){
               <div class="dropdown" id="menu-pass-${p.id}">
                 <div class="dropdown-item" onclick="openPassModal(${p.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit pass</div>
                 <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="movePass(${p.id},'active')"><i class="ti ti-id-badge" style="font-size:14px"></i> Move to Active</div>
+                <div class="dropdown-item" onclick="movePass(${p.id},'inactive')"><i class="ti ti-user-off" style="font-size:14px"></i> Move to Inactive</div>
+                <div class="dropdown-divider"></div>
                 <div class="dropdown-item danger" onclick="deletePass(${p.id})"><i class="ti ti-trash" style="font-size:14px"></i> Remove</div>
               </div>
             </div>
@@ -1064,7 +1201,32 @@ function renderMemberships(){
           <div class="staging-row-detail">${s.phone||'no phone'} · since ${since} · inactive</div>
         </div>
         <div class="staging-actions">
-          <button class="stage-btn active-btn" onclick="reactivatePatient(${s.id})"><i class="ti ti-rotate" style="font-size:12px"></i> Reactivate</button>
+          <button class="stage-btn active-btn" onclick="reactivatePatient(${s.id})"><i class="ti ti-rotate" style="font-size:12px"></i> Move to Active</button>
+          <button class="stage-btn pass-btn" onclick="moveInactiveToPass(${s.id})"><i class="ti ti-ticket" style="font-size:12px"></i> Move to Punch pass</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── FROZEN TAB ──
+  document.getElementById('frozen-count-badge').textContent=frozenSubs.length+' frozen';
+  const fl=document.getElementById('frozenList');
+  if(!frozenSubs.length){
+    fl.innerHTML='<div class="empty-state"><i class="ti ti-snowflake"></i>No frozen plans</div>';
+  } else {
+    fl.innerHTML=frozenSubs.map(s=>{
+      const plan=plans.find(p=>p.id===s.planId);
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      return `<div class="staging-row" style="background:#eff6ff;border-color:#bfdbfe">
+        <div class="avatar" style="background:#dbeafe;color:#1e40af">${initials}</div>
+        <div class="staging-row-info">
+          <div class="staging-row-name">${s.groupName} <span style="font-size:11px;padding:2px 7px;border-radius:10px;background:#dbeafe;color:#1e40af;margin-left:4px">❄ frozen</span></div>
+          <div class="staging-row-detail">${plan?plan.name:'No plan'} · ${s.phone||'no phone'} · since ${since}</div>
+        </div>
+        <div class="staging-actions">
+          <button class="stage-btn active-btn" onclick="unfreezeSubscription(${s.id})"><i class="ti ti-sun" style="font-size:12px"></i> Unfreeze</button>
+          <button class="stage-btn inactive-btn" onclick="moveFromFrozen(${s.id},'inactive')"><i class="ti ti-user-off" style="font-size:12px"></i> Inactive</button>
         </div>
       </div>`;
     }).join('');
