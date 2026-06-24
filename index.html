@@ -208,14 +208,33 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
           <div class="metric-val" id="d-subs">0</div>
           <div class="metric-sub" id="d-pts-sub">covers 0 patients</div>
         </div>
-        <div class="metric">
+        <div class="metric" style="grid-column:span 1">
           <div class="metric-label"><i class="ti ti-chart-pie" style="font-size:13px"></i> NP conversion rate</div>
-          <div style="display:flex;align-items:center;gap:12px;margin-top:2px">
+          <!-- Ring + percentage -->
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
             <div class="conv-ring-wrap">
               <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#dfd3c3" stroke-width="5"/><circle id="conv-arc" cx="26" cy="26" r="20" fill="none" stroke="#62684c" stroke-width="5" stroke-dasharray="125.7" stroke-dashoffset="125.7" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg>
               <div class="conv-ring-label" id="conv-pct-label">0%</div>
             </div>
-            <div><div class="metric-val" style="font-size:22px" id="d-conv">0%</div><div class="metric-sub" id="d-conv-sub">no data yet</div></div>
+            <div>
+              <div class="metric-val" style="font-size:22px;line-height:1" id="d-conv">0%</div>
+              <div style="font-size:11px;color:var(--text-hint);margin-top:2px" id="conv-quarter-label">this quarter</div>
+            </div>
+          </div>
+          <!-- Sub line: patients detail -->
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:5px" id="d-conv-sub">enter NP numbers below</div>
+          <!-- Previous quarter comparison -->
+          <div style="font-size:11px;margin-top:2px" id="d-conv-prev"></div>
+          <!-- Inputs — clean two-field row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">New patients</div>
+              <input type="number" id="np-total" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateConversion()"/>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Signed up</div>
+              <input type="number" id="np-converted" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateConversion()"/>
+            </div>
           </div>
         </div>
         <div class="metric">
@@ -1269,16 +1288,12 @@ function renderDashboard(){
   const totalPts=activeSubs.reduce((a,s)=>a+1+(s.members||[]).length,0);
   const totalMRR=activeSubs.reduce((a,s)=>a+s.fee,0);
   const passCount=passes.filter(p=>p.active).length;
-  const convPct=totalPts>0?Math.round(totalSubs/totalPts*100):0;
-
+  // Conversion rate — driven by manual inputs
+  updateConversion();
   document.getElementById('d-subs').textContent=totalSubs;
   document.getElementById('d-pts-sub').textContent='covers '+totalPts+' patient'+(totalPts!==1?'s':'');
   document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
   document.getElementById('d-pass').textContent=passCount;
-  document.getElementById('d-conv').textContent=convPct+'%';
-  document.getElementById('conv-pct-label').textContent=convPct+'%';
-  document.getElementById('d-conv-sub').textContent=totalPts?totalSubs+' subs · '+totalPts+' patients':'no data yet';
-  document.getElementById('conv-arc').style.strokeDashoffset=125.7-(convPct/100*125.7);
 
   const waiting=queue.filter(q=>q.status!=='in');
   document.getElementById('d-queue-badge').textContent=waiting.length+' waiting';
@@ -1588,6 +1603,82 @@ function renderAlerts(){
     </div>`;
 }
 // ── END RE-EVAL SYSTEM ─────────────────────────────────────────────────
+// ── NP CONVERSION RATE (quarterly) ───────────────────────────────────
+
+function getQuarterKey(date){
+  const d=date||new Date();
+  const q=Math.floor(d.getMonth()/3)+1;
+  return d.getFullYear()+'Q'+q; // e.g. "2026Q2"
+}
+function getQuarterLabel(key){
+  const y=key.substring(0,4);
+  const q=key.substring(5);
+  return 'Q'+q+' '+y; // e.g. "Q2 2026"
+}
+function getPrevQuarterKey(){
+  const now=new Date();
+  const q=Math.floor(now.getMonth()/3);
+  if(q===0){return (now.getFullYear()-1)+'Q4';}
+  return now.getFullYear()+'Q'+q;
+}
+
+function updateConversion(){
+  const totalEl=document.getElementById('np-total');
+  const convertedEl=document.getElementById('np-converted');
+  if(!totalEl||!convertedEl)return;
+
+  const total=parseInt(totalEl.value)||0;
+  const converted=Math.min(parseInt(convertedEl.value)||0,total);
+  const pct=total>0?Math.round(converted/total*100):0;
+
+  // Save current quarter
+  const currentKey=getQuarterKey();
+  const stored=JSON.parse(localStorage.getItem('sp_conv')||'{}');
+  stored[currentKey]={total,converted};
+  localStorage.setItem('sp_conv',JSON.stringify(stored));
+
+  // Previous quarter data
+  const prevKey=getPrevQuarterKey();
+  const prev=stored[prevKey]||null;
+  const prevPct=prev&&prev.total>0?Math.round(prev.converted/prev.total*100):null;
+
+  // Update ring and main display
+  const convEl=document.getElementById('d-conv');
+  const labelEl=document.getElementById('conv-pct-label');
+  const subEl=document.getElementById('d-conv-sub');
+  const prevEl=document.getElementById('d-conv-prev');
+  const quarterLabelEl=document.getElementById('conv-quarter-label');
+  const arc=document.getElementById('conv-arc');
+
+  if(convEl)convEl.textContent=pct+'%';
+  if(labelEl)labelEl.textContent=pct+'%';
+  if(subEl)subEl.textContent=total?converted+' of '+total+' NP on plan — '+getQuarterLabel(currentKey):'enter NP numbers below';
+  if(prevEl){
+    if(prevPct!==null){
+      const delta=pct-prevPct;
+      const arrow=delta>0?'↑':delta<0?'↓':'→';
+      const col=delta>0?'#5a7a3a':delta<0?'#a0402a':'var(--text-hint)';
+      prevEl.innerHTML=`<span style="color:${col}">${arrow} ${Math.abs(delta)}% vs ${getQuarterLabel(prevKey)} (${prevPct}%)</span>`;
+    } else {
+      prevEl.textContent=getQuarterLabel(prevKey)+': no data';
+    }
+  }
+  if(quarterLabelEl)quarterLabelEl.textContent=getQuarterLabel(currentKey);
+  if(arc)arc.style.strokeDashoffset=125.7-(pct/100*125.7);
+}
+
+function loadConversionInputs(){
+  const currentKey=getQuarterKey();
+  const stored=JSON.parse(localStorage.getItem('sp_conv')||'{}');
+  const data=stored[currentKey]||{total:0,converted:0};
+  const totalEl=document.getElementById('np-total');
+  const convertedEl=document.getElementById('np-converted');
+  if(totalEl&&data.total)totalEl.value=data.total;
+  if(convertedEl&&data.converted)convertedEl.value=data.converted;
+  updateConversion();
+}
+// ── END NP CONVERSION ─────────────────────────────────────────────────
+
 function showToast(msg){
   const t=document.getElementById('toast');
   const m=document.getElementById('toastMsg');
@@ -1974,7 +2065,7 @@ function pollSheetQueue(){
 window.onload=async function(){
   showToast('Loading your data…');
   await loadAllData();
-  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();startPolling();
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();loadConversionInputs();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
