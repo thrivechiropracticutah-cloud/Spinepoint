@@ -30,7 +30,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .page{display:none}.page.active{display:block}
 .page-title{font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:3px}
 .page-sub{font-size:13px;color:var(--text-secondary);margin-bottom:22px}
-.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px;align-items:start}
 .metric{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px}
 .metric-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:flex;align-items:center;gap:4px}
 .metric-val{font-size:24px;font-weight:500;color:var(--text-primary);line-height:1}
@@ -203,10 +203,16 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
       <div class="page-sub" id="dash-sub">—</div>
       <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Connect your Jane API key in Settings to pull live data. Data you enter here is saved to your browser.</span></div>
       <div class="metrics">
+        <!-- Card 1: Active subscriptions + punch passes -->
         <div class="metric">
           <div class="metric-label"><i class="ti ti-users" style="font-size:13px"></i> Active subscriptions</div>
           <div class="metric-val" id="d-subs">0</div>
           <div class="metric-sub" id="d-pts-sub">covers 0 patients</div>
+          <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div class="metric-label" style="margin-bottom:4px"><i class="ti ti-ticket" style="font-size:13px"></i> Punch pass holders</div>
+            <div class="metric-val" style="font-size:20px" id="d-pass">0</div>
+            <div class="metric-sub">tracked separately</div>
+          </div>
         </div>
         <div class="metric" style="grid-column:span 1">
           <div class="metric-label"><i class="ti ti-chart-pie" style="font-size:13px"></i> NP conversion rate</div>
@@ -237,17 +243,38 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
             </div>
           </div>
         </div>
+        <!-- Card 3: Attrition rate -->
         <div class="metric">
-          <div class="metric-label"><i class="ti ti-ticket" style="font-size:13px"></i> Punch pass holders</div>
-          <div class="metric-val" id="d-pass">0</div>
-          <div class="metric-sub">tracked separately</div>
+          <div class="metric-label"><i class="ti ti-trending-down" style="font-size:13px"></i> Attrition rate</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+            <div class="conv-ring-wrap">
+              <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#dfd3c3" stroke-width="5"/><circle id="attr-arc" cx="26" cy="26" r="20" fill="none" stroke="#935b38" stroke-width="5" stroke-dasharray="125.7" stroke-dashoffset="125.7" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg>
+              <div class="conv-ring-label" id="attr-pct-label">0%</div>
+            </div>
+            <div>
+              <div class="metric-val" style="font-size:22px;line-height:1" id="d-attr">0%</div>
+              <div style="font-size:11px;color:var(--text-hint);margin-top:2px" id="attr-quarter-label">this quarter</div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:5px" id="d-attr-sub">enter cancellation numbers below</div>
+          <div style="font-size:11px;margin-top:2px" id="d-attr-prev"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Cancelled</div>
+              <input type="number" id="attr-cancelled" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateAttrition()"/>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Total subs</div>
+              <input type="number" id="attr-total" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateAttrition()"/>
+            </div>
+          </div>
         </div>
+        <!-- Card 4: Monthly revenue -->
         <div class="metric">
           <div class="metric-label"><i class="ti ti-currency-dollar" style="font-size:13px"></i> Monthly revenue</div>
           <div class="metric-val" id="d-mrr">$0</div>
           <div class="metric-sub">active subscriptions</div>
         </div>
-      </div>
       <div class="two-col">
         <div class="card">
           <div class="card-header"><div class="card-title">Subscriptions by plan</div><span class="badge b-oak">Live</span></div>
@@ -257,10 +284,6 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
           <div class="card-header"><div class="card-title">MRR by plan</div><span class="badge b-ginger">Live</span></div>
           <div style="position:relative;width:100%;height:200px"><canvas id="planMrrChart"></canvas></div>
         </div>
-      </div>
-      <div class="card">
-        <div class="card-header"><div class="card-title">Today's check-in queue</div><span class="badge b-honey" id="d-queue-badge">0 waiting</span></div>
-        <div id="dashQueue"><div class="empty-state"><i class="ti ti-calendar"></i>No check-ins yet today</div></div>
       </div>
     </div>
 
@@ -1288,18 +1311,13 @@ function renderDashboard(){
   const totalPts=activeSubs.reduce((a,s)=>a+1+(s.members||[]).length,0);
   const totalMRR=activeSubs.reduce((a,s)=>a+s.fee,0);
   const passCount=passes.filter(p=>p.active).length;
-  // Conversion rate — driven by manual inputs
+  // Conversion and attrition — driven by manual inputs
   updateConversion();
+  updateAttrition();
   document.getElementById('d-subs').textContent=totalSubs;
   document.getElementById('d-pts-sub').textContent='covers '+totalPts+' patient'+(totalPts!==1?'s':'');
   document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
   document.getElementById('d-pass').textContent=passCount;
-
-  const waiting=queue.filter(q=>q.status!=='in');
-  document.getElementById('d-queue-badge').textContent=waiting.length+' waiting';
-  const dq=document.getElementById('dashQueue');
-  if(!queue.length){dq.innerHTML='<div class="empty-state"><i class="ti ti-calendar"></i>No check-ins yet today</div>';}
-  else renderQueueItems(dq,queue);
 
   if(pieChart){pieChart.destroy();pieChart=null;}
   if(mrrChart){mrrChart.destroy();mrrChart=null;}
@@ -1678,6 +1696,65 @@ function loadConversionInputs(){
   updateConversion();
 }
 // ── END NP CONVERSION ─────────────────────────────────────────────────
+
+// ── ATTRITION RATE (quarterly) ────────────────────────────────────────
+function updateAttrition(){
+  const cancelledEl=document.getElementById('attr-cancelled');
+  const totalEl=document.getElementById('attr-total');
+  if(!cancelledEl||!totalEl)return;
+
+  const cancelled=parseInt(cancelledEl.value)||0;
+  const total=parseInt(totalEl.value)||0;
+  const pct=total>0?Math.round(Math.min(cancelled,total)/total*100):0;
+
+  // Save current quarter
+  const currentKey=getQuarterKey();
+  const stored=JSON.parse(localStorage.getItem('sp_attr')||'{}');
+  stored[currentKey]={cancelled,total};
+  localStorage.setItem('sp_attr',JSON.stringify(stored));
+
+  // Previous quarter
+  const prevKey=getPrevQuarterKey();
+  const prev=stored[prevKey]||null;
+  const prevPct=prev&&prev.total>0?Math.round(prev.cancelled/prev.total*100):null;
+
+  // Update display
+  const attrEl=document.getElementById('d-attr');
+  const labelEl=document.getElementById('attr-pct-label');
+  const subEl=document.getElementById('d-attr-sub');
+  const prevEl=document.getElementById('d-attr-prev');
+  const quarterLabelEl=document.getElementById('attr-quarter-label');
+  const arc=document.getElementById('attr-arc');
+
+  if(attrEl)attrEl.textContent=pct+'%';
+  if(labelEl)labelEl.textContent=pct+'%';
+  if(subEl)subEl.textContent=total?cancelled+' of '+total+' subs cancelled — '+getQuarterLabel(currentKey):'enter cancellation numbers below';
+  if(prevEl){
+    if(prevPct!==null){
+      const delta=pct-prevPct;
+      // For attrition, lower is better so reverse the colours
+      const arrow=delta>0?'↑':delta<0?'↓':'→';
+      const col=delta>0?'#a0402a':delta<0?'#5a7a3a':'var(--text-hint)';
+      prevEl.innerHTML=`<span style="color:${col}">${arrow} ${Math.abs(delta)}% vs ${getQuarterLabel(prevKey)} (${prevPct}%)</span>`;
+    } else {
+      prevEl.textContent=getQuarterLabel(prevKey)+': no data';
+    }
+  }
+  if(quarterLabelEl)quarterLabelEl.textContent=getQuarterLabel(currentKey);
+  if(arc)arc.style.strokeDashoffset=125.7-(pct/100*125.7);
+}
+
+function loadAttritionInputs(){
+  const currentKey=getQuarterKey();
+  const stored=JSON.parse(localStorage.getItem('sp_attr')||'{}');
+  const data=stored[currentKey]||{cancelled:0,total:0};
+  const cancelledEl=document.getElementById('attr-cancelled');
+  const totalEl=document.getElementById('attr-total');
+  if(cancelledEl&&data.cancelled)cancelledEl.value=data.cancelled;
+  if(totalEl&&data.total)totalEl.value=data.total;
+  updateAttrition();
+}
+// ── END ATTRITION ──────────────────────────────────────────────────────
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -2065,7 +2142,7 @@ function pollSheetQueue(){
 window.onload=async function(){
   showToast('Loading your data…');
   await loadAllData();
-  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();loadConversionInputs();startPolling();
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();loadConversionInputs();loadAttritionInputs();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
