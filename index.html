@@ -202,80 +202,100 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
       <div class="page-title" id="dash-title">Practice overview</div>
       <div class="page-sub" id="dash-sub">—</div>
       <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Connect your Jane API key in Settings to pull live data. Data you enter here is saved to your browser.</span></div>
+      <!-- ROW 1 -->
       <div class="metrics">
-        <!-- Card 1: Active subscriptions + punch passes -->
+
+        <!-- R1C1: Total active subscriptions being billed -->
         <div class="metric">
-          <div class="metric-label"><i class="ti ti-users" style="font-size:13px"></i> Active subscriptions</div>
-          <div class="metric-val" id="d-subs">0</div>
-          <div class="metric-sub" id="d-pts-sub">covers 0 patients</div>
-          <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
-            <div class="metric-label" style="margin-bottom:4px"><i class="ti ti-ticket" style="font-size:13px"></i> Punch pass holders</div>
-            <div class="metric-val" style="font-size:20px" id="d-pass">0</div>
-            <div class="metric-sub">tracked separately</div>
+          <div class="metric-label"><i class="ti ti-receipt" style="font-size:13px"></i> Active subscriptions</div>
+          <div class="metric-val" id="d-active-pts">0</div>
+          <div class="metric-sub" id="d-active-pts-sub">billing units</div>
+        </div>
+
+        <!-- R1C2: NP this quarter + signed up (inputs) -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-user-plus" style="font-size:13px"></i> New patients <span id="r1-quarter-label" style="font-weight:400;color:var(--text-hint)"></span></div>
+          <div class="metric-val" id="d-np-total-display">—</div>
+          <div class="metric-sub" id="d-np-signed-sub">enter numbers below</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Total NP</div>
+              <input type="number" id="np-total" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Signed up</div>
+              <input type="number" id="np-converted" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+            </div>
           </div>
         </div>
-        <div class="metric" style="grid-column:span 1">
-          <div class="metric-label"><i class="ti ti-chart-pie" style="font-size:13px"></i> NP conversion rate</div>
-          <!-- Ring + percentage -->
+
+        <!-- R1C3: Cancellations this quarter (input) -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-user-minus" style="font-size:13px"></i> Cancellations <span id="r1-quarter-label2" style="font-weight:400;color:var(--text-hint)"></span></div>
+          <div class="metric-val" id="d-cancelled-display">—</div>
+          <div class="metric-sub" id="d-cancelled-sub">enter below</div>
+          <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Cancellations</div>
+            <input type="number" id="attr-cancelled" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+          </div>
+        </div>
+
+        <!-- R1C4: MRR in dollars -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-currency-dollar" style="font-size:13px"></i> Monthly revenue</div>
+          <div class="metric-val" id="d-mrr">$0</div>
+          <div class="metric-sub" id="d-mrr-sub">from active subscriptions</div>
+        </div>
+
+      </div><!-- end row 1 -->
+
+      <!-- ROW 2 -->
+      <div class="metrics" style="margin-top:-10px">
+
+        <!-- R2C1: Punch pass holders -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-ticket" style="font-size:13px"></i> Punch pass holders</div>
+          <div class="metric-val" id="d-pass">0</div>
+          <div class="metric-sub">tracked separately · receive SMS</div>
+        </div>
+
+        <!-- R2C2: Previous quarter NP conversion % -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-chart-pie" style="font-size:13px"></i> NP conversion <span id="r2-prev-label" style="font-weight:400;color:var(--text-hint)"></span></div>
           <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
             <div class="conv-ring-wrap">
               <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#dfd3c3" stroke-width="5"/><circle id="conv-arc" cx="26" cy="26" r="20" fill="none" stroke="#62684c" stroke-width="5" stroke-dasharray="125.7" stroke-dashoffset="125.7" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg>
               <div class="conv-ring-label" id="conv-pct-label">0%</div>
             </div>
             <div>
-              <div class="metric-val" style="font-size:22px;line-height:1" id="d-conv">0%</div>
-              <div style="font-size:11px;color:var(--text-hint);margin-top:2px" id="conv-quarter-label">this quarter</div>
+              <div class="metric-val" style="font-size:22px;line-height:1" id="d-conv">—</div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:2px" id="d-conv-sub">previous quarter</div>
             </div>
           </div>
-          <!-- Sub line: patients detail -->
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:5px" id="d-conv-sub">enter NP numbers below</div>
-          <!-- Previous quarter comparison -->
-          <div style="font-size:11px;margin-top:2px" id="d-conv-prev"></div>
-          <!-- Inputs — clean two-field row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
-            <div>
-              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">New patients</div>
-              <input type="number" id="np-total" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateConversion()"/>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Signed up</div>
-              <input type="number" id="np-converted" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateConversion()"/>
-            </div>
-          </div>
+          <div style="font-size:11px;margin-top:5px" id="d-conv-prev"></div>
         </div>
-        <!-- Card 3: Attrition rate -->
+
+        <!-- R2C3: Net growth (quarter start vs now, manual quarter-start input) -->
         <div class="metric">
-          <div class="metric-label"><i class="ti ti-trending-down" style="font-size:13px"></i> Attrition rate</div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
-            <div class="conv-ring-wrap">
-              <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#dfd3c3" stroke-width="5"/><circle id="attr-arc" cx="26" cy="26" r="20" fill="none" stroke="#935b38" stroke-width="5" stroke-dasharray="125.7" stroke-dashoffset="125.7" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg>
-              <div class="conv-ring-label" id="attr-pct-label">0%</div>
-            </div>
-            <div>
-              <div class="metric-val" style="font-size:22px;line-height:1" id="d-attr">0%</div>
-              <div style="font-size:11px;color:var(--text-hint);margin-top:2px" id="attr-quarter-label">this quarter</div>
-            </div>
-          </div>
-          <div style="font-size:11px;color:var(--text-secondary);margin-top:5px" id="d-attr-sub">enter cancellation numbers below</div>
-          <div style="font-size:11px;margin-top:2px" id="d-attr-prev"></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
-            <div>
-              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Cancelled</div>
-              <input type="number" id="attr-cancelled" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateAttrition()"/>
-            </div>
-            <div>
-              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Total subs</div>
-              <input type="number" id="attr-total" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateAttrition()"/>
-            </div>
+          <div class="metric-label"><i class="ti ti-trending-up" style="font-size:13px"></i> Net growth <span id="r2-quarter-label" style="font-weight:400;color:var(--text-hint)"></span></div>
+          <div class="metric-val" id="d-net-growth" style="font-size:22px">—</div>
+          <div class="metric-sub" id="d-net-growth-sub">subs added minus cancelled</div>
+          <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Subs at quarter start</div>
+            <input type="number" id="quarter-start-subs" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
           </div>
         </div>
-        <!-- Card 4: Monthly revenue -->
+
+        <!-- R2C4: Avg income per individual -->
         <div class="metric">
-          <div class="metric-label"><i class="ti ti-currency-dollar" style="font-size:13px"></i> Monthly revenue</div>
-          <div class="metric-val" id="d-mrr">$0</div>
-          <div class="metric-sub">active subscriptions</div>
+          <div class="metric-label"><i class="ti ti-coin" style="font-size:13px"></i> Avg income / patient</div>
+          <div class="metric-val" id="d-avg-income">$0</div>
+          <div class="metric-sub" id="d-avg-income-sub">MRR ÷ active patients</div>
         </div>
-      </div><!-- end .metrics -->
+
+      </div><!-- end row 2 -->
+
+      <!-- Charts -->
       <div class="two-col">
         <div class="card">
           <div class="card-header"><div class="card-title">Subscriptions by plan</div><span class="badge b-oak">Live</span></div>
@@ -286,7 +306,7 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
           <div style="position:relative;width:100%;height:200px"><canvas id="planMrrChart"></canvas></div>
         </div>
       </div>
-    </div>
+    </div><!-- end page-dashboard -->
 
     <!-- ALERTS -->
     <div class="page" id="page-alerts">
@@ -661,7 +681,7 @@ function dbPlanToApp(r){return {id:r.id,name:r.name,price:Number(r.price),maxMem
 function dbSubToApp(r){return {id:r.id,groupName:r.group_name,planId:r.plan_id,fee:Number(r.fee),primary:r.primary_holder,phone:r.phone,members:r.members||[],since:r.since,active:r.active,needsPlan:r.needs_plan,frozen:r.frozen||false};}
 function dbPassToApp(r){return {id:r.id,name:r.name,primary:r.primary_holder,phone:r.phone,members:r.members||[],visits:r.visits,date:r.purchase_date,active:r.active};}
 function dbQueueToApp(r){return {id:r.id,name:r.name,time:r.time_label,status:r.status,visitCount:r.visit_count};}
-function dbSettingsToApp(r){return {practiceName:r.practice_name,phone:r.phone,checkinUrl:r.checkin_url,overagePrice:r.overage_price,twilioSid:r.twilio_sid,twilioToken:r.twilio_token,twilioPhone:r.twilio_phone,janeSubdomain:r.jane_subdomain,janeKey:r.jane_key,appsScriptUrl:r.apps_script_url};}
+function dbSettingsToApp(r){return {practiceName:r.practice_name,phone:r.phone,checkinUrl:r.checkin_url,overagePrice:r.overage_price,twilioSid:r.twilio_sid,twilioToken:r.twilio_token,twilioPhone:r.twilio_phone,janeSubdomain:r.jane_subdomain,janeKey:r.jane_key,appsScriptUrl:r.apps_script_url,quarterlyStats:r.quarterly_stats||{}};}
 
 // ── Load all data from Supabase on startup ─────────────────────────────
 async function loadAllData(){
@@ -1313,12 +1333,17 @@ function renderDashboard(){
   const totalMRR=activeSubs.reduce((a,s)=>a+s.fee,0);
   const passCount=passes.filter(p=>p.active).length;
   // Conversion and attrition — driven by manual inputs
-  updateConversion();
-  updateAttrition();
-  document.getElementById('d-subs').textContent=totalSubs;
-  document.getElementById('d-pts-sub').textContent='covers '+totalPts+' patient'+(totalPts!==1?'s':'');
+  updateQuarterlyStats();
+  // Row 1
+  document.getElementById('d-active-pts').textContent=totalSubs;
+  document.getElementById('d-active-pts-sub').textContent=totalPts+' patient'+(totalPts!==1?'s':'')+' covered';
   document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
+  document.getElementById('d-mrr-sub').textContent='from '+totalSubs+' active subscription'+(totalSubs!==1?'s':'');
+  // Row 2
   document.getElementById('d-pass').textContent=passCount;
+  const avgIncome=totalPts>0?Math.round(totalMRR/totalPts):0;
+  document.getElementById('d-avg-income').textContent='$'+avgIncome.toLocaleString();
+  document.getElementById('d-avg-income-sub').textContent=totalPts?'$'+totalMRR.toLocaleString()+' ÷ '+totalPts+' patients':'no patients yet';
 
   if(pieChart){pieChart.destroy();pieChart=null;}
   if(mrrChart){mrrChart.destroy();mrrChart=null;}
@@ -1622,140 +1647,155 @@ function renderAlerts(){
     </div>`;
 }
 // ── END RE-EVAL SYSTEM ─────────────────────────────────────────────────
-// ── NP CONVERSION RATE (quarterly) ───────────────────────────────────
+// ── QUARTERLY STATS ───────────────────────────────────────────────────
 
 function getQuarterKey(date){
   const d=date||new Date();
   const q=Math.floor(d.getMonth()/3)+1;
-  return d.getFullYear()+'Q'+q; // e.g. "2026Q2"
+  return d.getFullYear()+'Q'+q;
 }
 function getQuarterLabel(key){
   const y=key.substring(0,4);
   const q=key.substring(5);
-  return 'Q'+q+' '+y; // e.g. "Q2 2026"
+  return 'Q'+q+' '+y;
 }
 function getPrevQuarterKey(){
   const now=new Date();
   const q=Math.floor(now.getMonth()/3);
-  if(q===0){return (now.getFullYear()-1)+'Q4';}
+  if(q===0)return (now.getFullYear()-1)+'Q4';
   return now.getFullYear()+'Q'+q;
 }
 
-function updateConversion(){
-  const totalEl=document.getElementById('np-total');
-  const convertedEl=document.getElementById('np-converted');
-  if(!totalEl||!convertedEl)return;
-
-  const total=parseInt(totalEl.value)||0;
-  const converted=Math.min(parseInt(convertedEl.value)||0,total);
-  const pct=total>0?Math.round(converted/total*100):0;
-
-  // Save current quarter
+function updateQuarterlyStats(){
   const currentKey=getQuarterKey();
-  const stored=JSON.parse(localStorage.getItem('sp_conv')||'{}');
-  stored[currentKey]={total,converted};
-  localStorage.setItem('sp_conv',JSON.stringify(stored));
-
-  // Previous quarter data
   const prevKey=getPrevQuarterKey();
+  const currentLabel=getQuarterLabel(currentKey);
+  const prevLabel=getQuarterLabel(prevKey);
+
+  // Read inputs
+  const npTotal=parseInt(document.getElementById('np-total')?.value)||0;
+  const npConverted=Math.min(parseInt(document.getElementById('np-converted')?.value)||0,npTotal);
+  const cancelled=parseInt(document.getElementById('attr-cancelled')?.value)||0;
+  const quarterStartSubs=parseInt(document.getElementById('quarter-start-subs')?.value)||0;
+
+  // Save to Supabase (and localStorage as fast local cache)
+  const stored=JSON.parse(localStorage.getItem('sp_qstats')||'{}');
+  stored[currentKey]={npTotal,npConverted,cancelled,quarterStartSubs};
+  localStorage.setItem('sp_qstats',JSON.stringify(stored));
+  // Async save to Supabase so it syncs across devices
+  sb.from('settings').update({quarterly_stats:stored}).eq('id',1).then(({error})=>{
+    if(error)console.log('Quarterly stats save error:',error);
+  });
+
   const prev=stored[prevKey]||null;
-  const prevPct=prev&&prev.total>0?Math.round(prev.converted/prev.total*100):null;
 
-  // Update ring and main display
+  // ── Row 1 labels ──
+  const ql=document.getElementById('r1-quarter-label');
+  const ql2=document.getElementById('r1-quarter-label2');
+  if(ql)ql.textContent='· '+currentLabel;
+  if(ql2)ql2.textContent='· '+currentLabel;
+
+  // R1C2: NP display
+  const npDisp=document.getElementById('d-np-total-display');
+  const npSub=document.getElementById('d-np-signed-sub');
+  if(npDisp)npDisp.textContent=npTotal||'—';
+  if(npSub)npSub.textContent=npTotal?npConverted+' signed up ('+Math.round(npConverted/npTotal*100)+'%)':'enter numbers below';
+
+  // R1C3: Cancellations display
+  const canDisp=document.getElementById('d-cancelled-display');
+  const canSub=document.getElementById('d-cancelled-sub');
+  if(canDisp)canDisp.textContent=cancelled||'—';
+  if(canSub)canSub.textContent=cancelled?cancelled+' this quarter':'enter below';
+
+  // ── Row 2 labels ──
+  const r2ql=document.getElementById('r2-quarter-label');
+  const r2pl=document.getElementById('r2-prev-label');
+  if(r2ql)r2ql.textContent='· '+currentLabel;
+  if(r2pl)r2pl.textContent='· '+prevLabel;
+
+  // R2C2: Previous quarter NP conversion
+  const prevConvPct=prev&&prev.npTotal>0?Math.round(prev.npConverted/prev.npTotal*100):null;
   const convEl=document.getElementById('d-conv');
-  const labelEl=document.getElementById('conv-pct-label');
-  const subEl=document.getElementById('d-conv-sub');
-  const prevEl=document.getElementById('d-conv-prev');
-  const quarterLabelEl=document.getElementById('conv-quarter-label');
-  const arc=document.getElementById('conv-arc');
+  const convSub=document.getElementById('d-conv-sub');
+  const convPrev=document.getElementById('d-conv-prev');
+  const convArc=document.getElementById('conv-arc');
+  const convLabel=document.getElementById('conv-pct-label');
+  const pct=prevConvPct!==null?prevConvPct:0;
+  if(convEl)convEl.textContent=prevConvPct!==null?prevConvPct+'%':'—';
+  if(convLabel)convLabel.textContent=pct+'%';
+  if(convSub)convSub.textContent=prev&&prev.npTotal?prev.npConverted+' of '+prev.npTotal+' NP on plan':'no data yet';
+  if(convArc)convArc.style.strokeDashoffset=125.7-(pct/100*125.7);
 
-  if(convEl)convEl.textContent=pct+'%';
-  if(labelEl)labelEl.textContent=pct+'%';
-  if(subEl)subEl.textContent=total?converted+' of '+total+' NP on plan — '+getQuarterLabel(currentKey):'enter NP numbers below';
-  if(prevEl){
-    if(prevPct!==null){
-      const delta=pct-prevPct;
+  // Compare prev vs the quarter before that
+  const prevPrevDate=new Date();
+  prevPrevDate.setMonth(prevPrevDate.getMonth()-6);
+  const prevPrevKey=getQuarterKey(prevPrevDate);
+  const prevPrev=stored[prevPrevKey]||null;
+  const prevPrevPct=prevPrev&&prevPrev.npTotal>0?Math.round(prevPrev.npConverted/prevPrev.npTotal*100):null;
+  if(convPrev){
+    if(prevConvPct!==null&&prevPrevPct!==null){
+      const delta=prevConvPct-prevPrevPct;
       const arrow=delta>0?'↑':delta<0?'↓':'→';
       const col=delta>0?'#5a7a3a':delta<0?'#a0402a':'var(--text-hint)';
-      prevEl.innerHTML=`<span style="color:${col}">${arrow} ${Math.abs(delta)}% vs ${getQuarterLabel(prevKey)} (${prevPct}%)</span>`;
+      convPrev.innerHTML=`<span style="color:${col}">${arrow} ${Math.abs(delta)}% vs ${getQuarterLabel(prevPrevKey)}</span>`;
     } else {
-      prevEl.textContent=getQuarterLabel(prevKey)+': no data';
+      convPrev.textContent='';
     }
   }
-  if(quarterLabelEl)quarterLabelEl.textContent=getQuarterLabel(currentKey);
-  if(arc)arc.style.strokeDashoffset=125.7-(pct/100*125.7);
-}
 
-function loadConversionInputs(){
-  const currentKey=getQuarterKey();
-  const stored=JSON.parse(localStorage.getItem('sp_conv')||'{}');
-  const data=stored[currentKey]||{total:0,converted:0};
-  const totalEl=document.getElementById('np-total');
-  const convertedEl=document.getElementById('np-converted');
-  if(totalEl&&data.total)totalEl.value=data.total;
-  if(convertedEl&&data.converted)convertedEl.value=data.converted;
-  updateConversion();
-}
-// ── END NP CONVERSION ─────────────────────────────────────────────────
-
-// ── ATTRITION RATE (quarterly) ────────────────────────────────────────
-function updateAttrition(){
-  const cancelledEl=document.getElementById('attr-cancelled');
-  const totalEl=document.getElementById('attr-total');
-  if(!cancelledEl||!totalEl)return;
-
-  const cancelled=parseInt(cancelledEl.value)||0;
-  const total=parseInt(totalEl.value)||0;
-  const pct=total>0?Math.round(Math.min(cancelled,total)/total*100):0;
-
-  // Save current quarter
-  const currentKey=getQuarterKey();
-  const stored=JSON.parse(localStorage.getItem('sp_attr')||'{}');
-  stored[currentKey]={cancelled,total};
-  localStorage.setItem('sp_attr',JSON.stringify(stored));
-
-  // Previous quarter
-  const prevKey=getPrevQuarterKey();
-  const prev=stored[prevKey]||null;
-  const prevPct=prev&&prev.total>0?Math.round(prev.cancelled/prev.total*100):null;
-
-  // Update display
-  const attrEl=document.getElementById('d-attr');
-  const labelEl=document.getElementById('attr-pct-label');
-  const subEl=document.getElementById('d-attr-sub');
-  const prevEl=document.getElementById('d-attr-prev');
-  const quarterLabelEl=document.getElementById('attr-quarter-label');
-  const arc=document.getElementById('attr-arc');
-
-  if(attrEl)attrEl.textContent=pct+'%';
-  if(labelEl)labelEl.textContent=pct+'%';
-  if(subEl)subEl.textContent=total?cancelled+' of '+total+' subs cancelled — '+getQuarterLabel(currentKey):'enter cancellation numbers below';
-  if(prevEl){
-    if(prevPct!==null){
-      const delta=pct-prevPct;
-      // For attrition, lower is better so reverse the colours
-      const arrow=delta>0?'↑':delta<0?'↓':'→';
-      const col=delta>0?'#a0402a':delta<0?'#5a7a3a':'var(--text-hint)';
-      prevEl.innerHTML=`<span style="color:${col}">${arrow} ${Math.abs(delta)}% vs ${getQuarterLabel(prevKey)} (${prevPct}%)</span>`;
+  // R2C3: Net growth = current subs - quarter start subs
+  const currentTotalSubs=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen).length;
+  const netGrowth=quarterStartSubs>0?currentTotalSubs-quarterStartSubs:null;
+  const ngEl=document.getElementById('d-net-growth');
+  const ngSub=document.getElementById('d-net-growth-sub');
+  if(ngEl){
+    if(netGrowth!==null){
+      const sign=netGrowth>0?'+':'';
+      const col=netGrowth>0?'#5a7a3a':netGrowth<0?'#a0402a':'var(--text-primary)';
+      ngEl.textContent=sign+netGrowth;
+      ngEl.style.color=col;
     } else {
-      prevEl.textContent=getQuarterLabel(prevKey)+': no data';
+      ngEl.textContent='—';
+      ngEl.style.color='var(--text-primary)';
     }
   }
-  if(quarterLabelEl)quarterLabelEl.textContent=getQuarterLabel(currentKey);
-  if(arc)arc.style.strokeDashoffset=125.7-(pct/100*125.7);
+  if(ngSub)ngSub.textContent=quarterStartSubs>0?'started '+currentLabel+' with '+quarterStartSubs+' subs':'enter quarter-start count below';
 }
 
-function loadAttritionInputs(){
+async function loadQuarterlyStats(){
   const currentKey=getQuarterKey();
-  const stored=JSON.parse(localStorage.getItem('sp_attr')||'{}');
-  const data=stored[currentKey]||{cancelled:0,total:0};
-  const cancelledEl=document.getElementById('attr-cancelled');
-  const totalEl=document.getElementById('attr-total');
-  if(cancelledEl&&data.cancelled)cancelledEl.value=data.cancelled;
-  if(totalEl&&data.total)totalEl.value=data.total;
-  updateAttrition();
+  let stored=JSON.parse(localStorage.getItem('sp_qstats')||'{}');
+
+  // Try to load from Supabase (source of truth across devices)
+  try{
+    const{data,error}=await sb.from('settings').select('quarterly_stats').eq('id',1).single();
+    if(!error&&data&&data.quarterly_stats&&Object.keys(data.quarterly_stats).length){
+      stored=data.quarterly_stats;
+      localStorage.setItem('sp_qstats',JSON.stringify(stored));
+    }
+  }catch(e){console.log('Quarterly stats load error:',e);}
+
+  const data=stored[currentKey]||{};
+  const ids={
+    'np-total':'npTotal',
+    'np-converted':'npConverted',
+    'attr-cancelled':'cancelled',
+    'quarter-start-subs':'quarterStartSubs'
+  };
+  Object.entries(ids).forEach(([elId,key])=>{
+    const el=document.getElementById(elId);
+    if(el&&data[key])el.value=data[key];
+  });
+  updateQuarterlyStats();
 }
-// ── END ATTRITION ──────────────────────────────────────────────────────
+
+// Legacy stubs — keep these so any old references don't crash
+function updateConversion(){updateQuarterlyStats();}
+function loadConversionInputs(){loadQuarterlyStats();}
+function updateAttrition(){updateQuarterlyStats();}
+function loadAttritionInputs(){}
+
+// ── END QUARTERLY STATS ───────────────────────────────────────────────
 
 function showToast(msg){
   const t=document.getElementById('toast');
@@ -2143,7 +2183,7 @@ function pollSheetQueue(){
 window.onload=async function(){
   showToast('Loading your data…');
   await loadAllData();
-  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();loadConversionInputs();loadAttritionInputs();startPolling();
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();loadQuarterlyStats();loadAttritionInputs();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
