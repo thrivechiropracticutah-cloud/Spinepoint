@@ -629,6 +629,8 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
         <label class="field-label">Primary phone</label><input type="text" class="field-input" id="sm-phone" placeholder="(801) 555-1234"/>
         <label class="field-label">Additional members <span style="color:var(--text-hint);font-weight:400">— one per line</span></label>
         <textarea class="field-input" id="sm-members" placeholder="Sarah Smith&#10;Tommy Smith&#10;Emily Smith" rows="4"></textarea>
+        <label class="field-label">Member phone numbers <span style="color:var(--text-hint);font-weight:400">— one per line, same order as members above</span></label>
+        <textarea class="field-input" id="sm-member-phones" placeholder="8015551234&#10;8015555678&#10;8015559012" rows="4"></textarea>
         <label class="field-label">Member since</label><input type="date" class="field-input" id="sm-since"/>
         <div class="modal-actions"><button class="btn-cancel" onclick="closeSubModal()">Cancel</button><button class="btn-save" onclick="saveSub()">Save subscription</button></div>
       </div>
@@ -678,8 +680,8 @@ let dataReady=false;
 
 // ── Map DB rows (snake_case) <-> app objects (camelCase) ──────────────
 function dbPlanToApp(r){return {id:r.id,name:r.name,price:Number(r.price),maxMembers:r.max_members};}
-function dbSubToApp(r){return {id:r.id,groupName:r.group_name,planId:r.plan_id,fee:Number(r.fee),primary:r.primary_holder,phone:r.phone,members:r.members||[],since:r.since,active:r.active,needsPlan:r.needs_plan,frozen:r.frozen||false};}
-function dbPassToApp(r){return {id:r.id,name:r.name,primary:r.primary_holder,phone:r.phone,members:r.members||[],visits:r.visits,date:r.purchase_date,active:r.active};}
+function dbSubToApp(r){return {id:r.id,groupName:r.group_name,planId:r.plan_id,fee:Number(r.fee),primary:r.primary_holder,phone:r.phone,members:r.members||[],memberPhones:r.member_phones||[],since:r.since,active:r.active,needsPlan:r.needs_plan,frozen:r.frozen||false};}
+function dbPassToApp(r){return {id:r.id,name:r.name,primary:r.primary_holder,phone:r.phone,members:r.members||[],memberPhones:r.member_phones||[],visits:r.visits,date:r.purchase_date,active:r.active};}
 function dbQueueToApp(r){return {id:r.id,name:r.name,time:r.time_label,status:r.status,visitCount:r.visit_count};}
 function dbSettingsToApp(r){return {practiceName:r.practice_name,phone:r.phone,checkinUrl:r.checkin_url,overagePrice:r.overage_price,twilioSid:r.twilio_sid,twilioToken:r.twilio_token,twilioPhone:r.twilio_phone,janeSubdomain:r.jane_subdomain,janeKey:r.jane_key,appsScriptUrl:r.apps_script_url,quarterlyStats:r.quarterly_stats||{}};}
 
@@ -825,10 +827,11 @@ function openSubModal(id){
     document.getElementById('sm-primary').value=s.primary||'';
     document.getElementById('sm-phone').value=s.phone||'';
     document.getElementById('sm-members').value=(s.members||[]).join('\n');
+    document.getElementById('sm-member-phones').value=(s.memberPhones||[]).join('\n');
     document.getElementById('sm-since').value=s.since||'';
     planSel.value=s.planId||'';
   } else {
-    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-since'].forEach(id=>document.getElementById(id).value='');
+    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-member-phones','sm-since'].forEach(id=>document.getElementById(id).value='');
   }
   planSel.onchange=function(){
     const p=plans.find(x=>x.id===+this.value);
@@ -847,8 +850,10 @@ async function saveSub(){
   const phone=document.getElementById('sm-phone').value.trim();
   const membersRaw=document.getElementById('sm-members').value;
   const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
+  const memberPhonesRaw=document.getElementById('sm-member-phones').value;
+  const memberPhones=memberPhonesRaw.split('\n').map(p=>p.trim()).filter(Boolean);
   const since=document.getElementById('sm-since').value||null;
-  const row={group_name:groupName,plan_id:planId,fee,primary_holder:primary,phone,members,since,active:true,needs_plan:false};
+  const row={group_name:groupName,plan_id:planId,fee,primary_holder:primary,phone,members,member_phones:memberPhones,since,active:true,needs_plan:false};
   try{
     if(id){
       const{data,error}=await sb.from('subscriptions').update(row).eq('id',+id).select().single();
@@ -1409,17 +1414,25 @@ async function clearQueue(){
 // ── SMS ───────────────────────────────────────────────────────────────
 function getAudiencePhones(v){
   const nums=new Set();
-  const add=function(p){if(p&&p.trim())nums.add(p.trim());};
+  // Add all phones from a subscription — holder + all member phones
+  const addSub=function(s){
+    if(s.phone&&s.phone.trim())nums.add(s.phone.trim());
+    (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())nums.add(p.trim());});
+  };
+  const addPass=function(p){
+    if(p.phone&&p.phone.trim())nums.add(p.phone.trim());
+    (p.memberPhones||[]).forEach(ph=>{if(ph&&ph.trim())nums.add(ph.trim());});
+  };
   if(v==='all'){
-    subs.filter(s=>s.active).forEach(s=>add(s.phone));
-    passes.filter(p=>p.active).forEach(p=>add(p.phone));
+    subs.filter(s=>s.active).forEach(addSub);
+    passes.filter(p=>p.active).forEach(addPass);
   } else if(v==='sub'){
-    subs.filter(s=>s.active).forEach(s=>add(s.phone));
+    subs.filter(s=>s.active).forEach(addSub);
   } else if(v==='pass'){
-    passes.filter(p=>p.active).forEach(p=>add(p.phone));
+    passes.filter(p=>p.active).forEach(addPass);
   } else if(v.startsWith('plan-')){
     const pid=parseInt(v.replace('plan-',''));
-    subs.filter(s=>s.active&&s.planId===pid).forEach(s=>add(s.phone));
+    subs.filter(s=>s.active&&s.planId===pid).forEach(addSub);
   }
   return Array.from(nums);
 }
@@ -2067,6 +2080,7 @@ async function confirmSync(){
         primary_holder:p.displayName,
         phone:p.phone,
         members:[],
+        member_phones:[],
         since:toSafeDate(p.memberSince||p.firstVisit),
         active:true,
         needs_plan:true
