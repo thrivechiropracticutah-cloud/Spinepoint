@@ -2,141 +2,2204 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<title>Check In — Thrive Chiropractic</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SpinePoint Chiro — Practice Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --oak:#62684c;--garden:#4e513b;--honey:#d2985a;--linen:#dfd3c3;
-  --bg:#f5f0e8;--card:#ffffff;--text:#2c2a24;--muted:#6b6456;--hint:#9c9181;
+  --oak:#62684c;--garden:#4e513b;--sage:#acad96;--linen:#dfd3c3;--ginger:#d0b59e;--rook:#935b38;--honey:#d2985a;
+  --bg:#f5f0e8;--surface:#fffdf9;--card:#ffffff;
+  --text-primary:#2c2a24;--text-secondary:#6b6456;--text-hint:#9c9181;
   --border:#dfd3c3;--border-strong:#c9b99e;
 }
-html,body{min-height:100vh;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif}
-.wrap{max-width:420px;margin:0 auto;padding:40px 20px;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.logo-ring{width:72px;height:72px;border-radius:16px;background:var(--garden);display:flex;align-items:center;justify-content:center;margin-bottom:20px}
-.logo-ring svg{width:36px;height:36px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.practice-name{font-size:20px;font-weight:500;color:var(--text);margin-bottom:4px;text-align:center}
-.practice-sub{font-size:14px;color:var(--muted);margin-bottom:36px;text-align:center}
-.card{background:var(--card);border:0.5px solid var(--border);border-radius:16px;padding:28px 24px;width:100%}
-.card-label{font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
-.name-input{width:100%;border:0.5px solid var(--border-strong);border-radius:10px;padding:14px 16px;font-size:17px;background:var(--bg);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
-.name-input:focus{outline:none;border-color:var(--oak);background:#fff}
-.name-input::placeholder{color:var(--hint)}
-.checkin-btn{width:100%;background:var(--oak);color:#fff;border:none;border-radius:10px;padding:16px;font-size:16px;font-weight:500;cursor:pointer;margin-top:16px;font-family:inherit;transition:.15s}
-.checkin-btn:hover{background:var(--garden)}
-.checkin-btn:active{transform:scale(.98)}
-.checkin-btn:disabled{background:var(--hint);cursor:not-allowed;transform:none}
-.status-wrap{display:none;text-align:center;padding:20px 0}
-.status-icon{width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-size:28px}
-.status-icon.success{background:#e8ece0}
-.status-icon.error{background:#f5ddd8}
-.status-title{font-size:18px;font-weight:500;color:var(--text);margin-bottom:6px}
-.status-sub{font-size:14px;color:var(--muted);line-height:1.5}
-.visit-badge{display:inline-block;margin-top:12px;padding:4px 14px;background:var(--linen);border-radius:20px;font-size:13px;color:var(--muted)}
-.try-again{background:none;border:0.5px solid var(--border-strong);border-radius:8px;padding:10px 20px;font-size:14px;color:var(--text);cursor:pointer;margin-top:20px;font-family:inherit}
-.try-again:hover{background:var(--linen)}
-.footer{margin-top:32px;font-size:12px;color:var(--hint);text-align:center}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text-primary);min-height:100vh}
+.app{display:flex;min-height:100vh}
+.sidebar{width:214px;background:var(--garden);padding:24px 0;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:10}
+.logo{padding:0 18px 20px;border-bottom:0.5px solid rgba(255,255,255,.12)}
+.logo-name{font-size:14px;font-weight:500;color:#fff}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.38);margin-top:2px}
+.nav{padding:12px 0;flex:1}
+.nav-section{font-size:10px;color:rgba(255,255,255,.28);padding:12px 18px 4px;letter-spacing:.8px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 18px;font-size:13px;color:rgba(255,255,255,.52);cursor:pointer;transition:all .15s;border-left:2px solid transparent}
+.nav-item:hover{color:rgba(255,255,255,.88);background:rgba(255,255,255,.06)}
+.nav-item.active{color:#fff;border-left-color:var(--honey);background:rgba(210,152,90,.12)}
+.nav-item i{font-size:16px;flex-shrink:0}
+.alert-dot{width:6px;height:6px;border-radius:50%;background:var(--honey);margin-left:auto}
+.main{margin-left:214px;flex:1;padding:28px}
+.page{display:none}.page.active{display:block}
+.page-title{font-size:18px;font-weight:500;color:var(--text-primary);margin-bottom:3px}
+.page-sub{font-size:13px;color:var(--text-secondary);margin-bottom:22px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px;align-items:start}
+.metric{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:14px 16px}
+.metric-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:flex;align-items:center;gap:4px}
+.metric-val{font-size:24px;font-weight:500;color:var(--text-primary);line-height:1}
+.metric-delta{font-size:11px;margin-top:4px;color:#5a7a3a}
+.metric-delta.down{color:#a0402a}
+.metric-sub{font-size:11px;color:var(--text-hint);margin-top:3px}
+.card{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:18px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:500;color:var(--text-primary)}
+.badge{font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500}
+.b-oak{background:#e8ece0;color:#3a3f28}
+.b-honey{background:#f5e6cc;color:#6b3f0e}
+.b-sage{background:#eaebe3;color:#4a4c35}
+.b-ginger{background:#f5e8dc;color:#6b3a1e}
+.b-red{background:#f5ddd8;color:#7a2e1e}
+.b-gray{background:#f0ece6;color:#5a4a38}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.queue-list{display:flex;flex-direction:column;gap:7px}
+.queue-item{display:flex;align-items:center;gap:12px;padding:10px 14px;border:0.5px solid var(--border);border-radius:9px;background:var(--surface)}
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0}
+.q-info{flex:1;min-width:0}
+.q-name{font-size:13px;font-weight:500;color:var(--text-primary)}
+.q-detail{font-size:11px;color:var(--text-secondary);margin-top:1px}
+.q-status{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-secondary);white-space:nowrap}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.dot-wait{background:var(--honey)}.dot-ready{background:var(--oak)}.dot-in{background:var(--rook)}
+.jane-note{background:#f5f0e4;border:0.5px solid var(--ginger);border-radius:8px;padding:11px 13px;font-size:12px;color:var(--rook);margin-bottom:18px;display:flex;gap:7px;align-items:flex-start}
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999}
+.toast{background:var(--garden);color:#fff;padding:12px 16px;border-radius:9px;font-size:13px;display:none;align-items:center;gap:7px;box-shadow:0 4px 20px rgba(0,0,0,.15)}
+.toast.show{display:flex}
+.primary-btn{background:var(--oak);color:#fff;border:none;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.primary-btn:hover{background:var(--garden)}
+.sm-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border-strong);background:var(--card);color:var(--text-primary);cursor:pointer}
+.sm-btn:hover{background:var(--linen)}
+.sm-btn.primary{background:var(--oak);color:#fff;border-color:var(--oak)}
+.sm-btn.primary:hover{background:var(--garden)}
+.tier-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.tier-card{border:0.5px solid var(--border);border-radius:10px;padding:14px 15px;background:var(--card);position:relative;overflow:visible}
+.tier-card:hover{border-color:var(--border-strong)}
+.tier-name{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.tier-count{font-size:26px;font-weight:500;line-height:1;color:var(--text-primary)}
+.tier-mrr{font-size:12px;color:var(--text-secondary);margin-top:3px}
+.tier-bar-bg{height:3px;background:var(--linen);border-radius:2px;margin-top:10px}
+.tier-bar-fill{height:100%;border-radius:2px}
+.menu-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--text-hint);padding:3px 5px;border-radius:5px;font-size:15px;line-height:1}
+.menu-btn:hover{background:var(--linen);color:var(--text-primary)}
+.dropdown{position:absolute;top:32px;right:0;background:var(--card);border:0.5px solid var(--border-strong);border-radius:8px;padding:4px 0;min-width:160px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.dropdown.open{display:block}
+.dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;color:var(--text-primary);cursor:pointer}
+.dropdown-item:hover{background:var(--linen)}
+.dropdown-item.danger{color:#a0402a}
+.dropdown-item.danger:hover{background:#f5ddd8}
+.dropdown-divider{height:0.5px;background:var(--border);margin:4px 0}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(46,42,30,.45);z-index:100;justify-content:center;align-items:flex-start;padding-top:60px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--card);border:0.5px solid var(--border-strong);border-radius:14px;padding:24px;width:420px;max-width:96%;box-shadow:0 8px 32px rgba(0,0,0,.14);max-height:82vh;overflow-y:auto}
+.modal-title{font-size:15px;font-weight:500;color:var(--text-primary);margin-bottom:18px}
+.field-label{font-size:12px;color:var(--text-secondary);margin-bottom:5px;display:block;font-weight:500}
+.field-input{width:100%;border:0.5px solid var(--border-strong);border-radius:7px;padding:8px 10px;font-size:13px;background:var(--surface);color:var(--text-primary);margin-bottom:13px;font-family:inherit}
+.field-input:focus{outline:none;border-color:var(--oak)}
+.modal-actions{display:flex;gap:8px;margin-top:6px}
+.btn-save{background:var(--oak);color:#fff;border:none;padding:9px 18px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;flex:1}
+.btn-save:hover{background:var(--garden)}
+.btn-cancel{background:none;border:0.5px solid var(--border-strong);padding:9px 18px;border-radius:7px;font-size:13px;color:var(--text-primary);cursor:pointer;flex:1}
+.btn-cancel:hover{background:var(--linen)}
+.empty-state{text-align:center;padding:32px 20px;color:var(--text-hint);font-size:13px}
+.empty-state i{font-size:28px;display:block;margin-bottom:8px;color:var(--sage)}
+.kiosk-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.qr-panel{background:var(--card);border:0.5px solid var(--border);border-radius:12px;padding:24px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.qr-frame{border:2px solid var(--garden);border-radius:10px;padding:12px;background:#fff;display:inline-block;margin-bottom:14px}
+.url-pill{font-size:11px;color:var(--text-hint);background:var(--linen);border-radius:6px;padding:4px 10px;font-family:monospace;margin-top:8px}
+.print-btn{background:var(--oak);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;margin-top:14px}
+.print-btn:hover{background:var(--garden)}
+.conv-ring-wrap{position:relative;width:52px;height:52px;flex-shrink:0}
+.conv-ring-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:11px;font-weight:500;color:var(--text-primary)}
+.sms-select{width:100%;padding:8px 10px;font-size:13px;border:0.5px solid var(--border-strong);border-radius:7px;background:var(--surface);color:var(--text-primary)}
+.sms-textarea{width:100%;border:0.5px solid var(--border-strong);border-radius:7px;padding:9px 11px;font-size:13px;resize:vertical;min-height:90px;font-family:inherit;color:var(--text-primary);background:var(--surface)}
+.sms-textarea:focus,.sms-select:focus,.field-input:focus{outline:none;border-color:var(--oak)}
+
+/* ── Subscription group cards ── */
+.sub-group{border:0.5px solid var(--border);border-radius:10px;background:var(--card);overflow:hidden;margin-bottom:10px}
+.sub-group-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface);border-bottom:0.5px solid var(--border)}
+.sub-group-left{display:flex;align-items:center;gap:10px}
+.sub-group-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0}
+.sub-group-name{font-size:14px;font-weight:500;color:var(--text-primary)}
+.sub-group-plan{font-size:12px;color:var(--text-secondary);margin-top:1px}
+.sub-group-fee{font-size:14px;font-weight:500;color:var(--text-primary);text-align:right}
+.sub-group-fee-label{font-size:11px;color:var(--text-hint);margin-top:1px;text-align:right}
+.sub-group-body{padding:12px 16px}
+.sub-group-section{margin-bottom:10px}
+.sub-group-section:last-child{margin-bottom:0}
+.sub-section-label{font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:.5px;color:var(--text-hint);margin-bottom:6px}
+.member-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px;border-radius:20px;background:var(--linen);color:var(--text-secondary);margin:0 4px 4px 0}
+.member-pill.primary{background:#e8ece0;color:#3a3f28;font-weight:500}
+.del-group-btn{background:none;border:none;cursor:pointer;color:var(--text-hint);padding:4px 6px;border-radius:5px;font-size:14px}
+.del-group-btn:hover{color:#a0402a;background:#f5ddd8}
+.member-input-row{display:flex;gap:6px;margin-bottom:6px}
+.member-input-row input{flex:1;border:0.5px solid var(--border-strong);border-radius:6px;padding:6px 8px;font-size:13px;background:var(--surface);color:var(--text-primary);font-family:inherit}
+.member-input-row input:focus{outline:none;border-color:var(--oak)}
+.add-member-btn{background:none;border:0.5px dashed var(--border-strong);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--text-secondary);cursor:pointer;white-space:nowrap}
+.add-member-btn:hover{background:var(--linen);color:var(--text-primary)}
+.m-tab{background:none;border:none;border-bottom:2px solid transparent;padding:10px 16px;font-size:13px;color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;gap:6px;margin-bottom:-0.5px;white-space:nowrap}
+.m-tab:hover{color:var(--text-primary);background:var(--linen)}
+.m-tab.active{color:var(--oak);border-bottom-color:var(--oak);font-weight:500}
+.m-tab-count{font-size:11px;padding:1px 6px;border-radius:10px;background:var(--linen);color:var(--text-secondary);font-weight:400}
+.m-tab.active .m-tab-count{background:#e8ece0;color:#3a3f28}
+.m-tab-view{margin-top:0}
+.staging-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border:0.5px solid var(--border);border-radius:9px;background:var(--surface);margin-bottom:7px}
+.staging-row-info{flex:1;min-width:0}
+.staging-row-name{font-size:13px;font-weight:500;color:var(--text-primary)}
+.staging-row-detail{font-size:11px;color:var(--text-secondary);margin-top:1px}
+.staging-actions{display:flex;gap:6px;flex-shrink:0}
+.stage-btn{font-size:11px;padding:5px 10px;border-radius:6px;border:0.5px solid var(--border-strong);background:var(--card);color:var(--text-primary);cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.stage-btn:hover{background:var(--linen)}
+.stage-btn.active-btn{background:#e8ece0;color:#3a3f28;border-color:#c4c9b0}
+.stage-btn.active-btn:hover{background:#d8dcc8}
+.stage-btn.pass-btn{background:#f5e6cc;color:#6b3f0e;border-color:#e0c898}
+.stage-btn.pass-btn:hover{background:#eed8a8}
+.stage-btn.inactive-btn{background:#f5ddd8;color:#7a2e1e;border-color:#ddb0a0}
+.stage-btn.inactive-btn:hover{background:#ecc8c0}
+.del-row-btn{background:none;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 7px;cursor:pointer;color:var(--text-hint);display:inline-flex;align-items:center;justify-content:center}
+.del-row-btn:hover{background:#fee2e2;border-color:#fca5a5;color:#991b1b}
+padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margin-bottom:-0.5px}
+.sync-tab:hover{color:var(--text-primary)}
+.sync-tab.active{color:var(--oak);border-bottom-color:var(--oak);font-weight:500}
+.sync-row{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;margin-bottom:5px;font-size:13px}
+.sync-row.new{background:#edf0e5}
+.sync-row.update{background:#f5f0e8}
+.sync-row.inactive{background:#f5ddd8}
+.sync-row.skip{background:var(--surface)}
+.sync-row-name{font-weight:500;flex:1;color:var(--text-primary)}
+.sync-row-detail{font-size:12px;color:var(--text-secondary)}
+.sync-pill{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;white-space:nowrap}
+.pill-new{background:#e8ece0;color:#3a3f28}
+.pill-update{background:#f5e6cc;color:#6b3f0e}
+.pill-inactive{background:#f5ddd8;color:#7a2e1e}
+.pill-skip{background:#f0ece6;color:#5a4a38}
+#dropZone.dragover{background:var(--linen);border-color:var(--oak)}
+
+.inline-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="logo-ring">
-    <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
-  </div>
-  <div class="practice-name" id="practiceName">Thrive Chiropractic</div>
-  <div class="practice-sub">Check in for your appointment</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-name" id="sidebar-practice-name">Your Practice</div>
+      <div class="logo-sub">Practice dashboard</div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Overview</div>
+      <div class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" onclick="nav('alerts',this)"><i class="ti ti-bell"></i> Alerts <div class="alert-dot" id="alertDot" style="display:none"></div></div>
+      <div class="nav-section">Patients</div>
+      <div class="nav-item" onclick="nav('memberships',this)"><i class="ti ti-id-badge"></i> Memberships</div>
+      <div class="nav-item" onclick="nav('checkin',this)"><i class="ti ti-scan"></i> Check-in kiosk</div>
+      <div class="nav-section">Communications</div>
+      <div class="nav-item" onclick="nav('sms',this)"><i class="ti ti-message-2"></i> Mass SMS</div>
+      <div class="nav-section">Admin</div>
+      <div class="nav-item" onclick="nav('janesync',this)"><i class="ti ti-file-import"></i> Jane sync</div>
+      <div class="nav-item" onclick="nav('settings',this)"><i class="ti ti-settings"></i> Settings</div>
+    </nav>
+  </aside>
 
-  <div class="card" id="formCard">
-    <div class="card-label">Your name</div>
-    <input type="text" class="name-input" id="nameInput" placeholder="First and last name" autocomplete="name" autocorrect="off" spellcheck="false" maxlength="80" onkeydown="if(event.key==='Enter')submitCheckIn()"/>
-    <button class="checkin-btn" id="submitBtn" onclick="submitCheckIn()">Check in</button>
-  </div>
+  <main class="main">
 
-  <div class="status-wrap" id="statusWrap">
-    <div class="status-icon" id="statusIcon"></div>
-    <div class="status-title" id="statusTitle"></div>
-    <div class="status-sub" id="statusSub"></div>
-    <div class="visit-badge" id="visitBadge" style="display:none"></div>
-    <button class="try-again" id="tryAgainBtn" onclick="resetForm()" style="display:none">Check in someone else</button>
-  </div>
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title" id="dash-title">Practice overview</div>
+      <div class="page-sub" id="dash-sub">—</div>
+      <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Connect your Jane API key in Settings to pull live data. Data you enter here is saved to your browser.</span></div>
+      <!-- ROW 1 -->
+      <div class="metrics">
 
-  <div class="footer">No app needed · your info is only used for today's queue</div>
+        <!-- R1C1: Total active subscriptions being billed -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-receipt" style="font-size:13px"></i> Active subscriptions</div>
+          <div class="metric-val" id="d-active-pts">0</div>
+          <div class="metric-sub" id="d-active-pts-sub">billing units</div>
+        </div>
+
+        <!-- R1C2: NP this quarter + signed up (inputs) -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-user-plus" style="font-size:13px"></i> New patients <span id="r1-quarter-label" style="font-weight:400;color:var(--text-hint)"></span></div>
+          <div class="metric-val" id="d-np-total-display">—</div>
+          <div class="metric-sub" id="d-np-signed-sub">enter numbers below</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Total NP</div>
+              <input type="number" id="np-total" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Signed up</div>
+              <input type="number" id="np-converted" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+            </div>
+          </div>
+        </div>
+
+        <!-- R1C3: Cancellations this quarter (input) -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-user-minus" style="font-size:13px"></i> Cancellations <span id="r1-quarter-label2" style="font-weight:400;color:var(--text-hint)"></span></div>
+          <div class="metric-val" id="d-cancelled-display">—</div>
+          <div class="metric-sub" id="d-cancelled-sub">enter below</div>
+          <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Cancellations</div>
+            <input type="number" id="attr-cancelled" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+          </div>
+        </div>
+
+        <!-- R1C4: MRR in dollars -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-currency-dollar" style="font-size:13px"></i> Monthly revenue</div>
+          <div class="metric-val" id="d-mrr">$0</div>
+          <div class="metric-sub" id="d-mrr-sub">from active subscriptions</div>
+        </div>
+
+      </div><!-- end row 1 -->
+
+      <!-- ROW 2 -->
+      <div class="metrics" style="margin-top:-10px">
+
+        <!-- R2C1: Punch pass holders -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-ticket" style="font-size:13px"></i> Punch pass holders</div>
+          <div class="metric-val" id="d-pass">0</div>
+          <div class="metric-sub">tracked separately · receive SMS</div>
+        </div>
+
+        <!-- R2C2: Previous quarter NP conversion % -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-chart-pie" style="font-size:13px"></i> NP conversion <span id="r2-prev-label" style="font-weight:400;color:var(--text-hint)"></span></div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:4px">
+            <div class="conv-ring-wrap">
+              <svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="20" fill="none" stroke="#dfd3c3" stroke-width="5"/><circle id="conv-arc" cx="26" cy="26" r="20" fill="none" stroke="#62684c" stroke-width="5" stroke-dasharray="125.7" stroke-dashoffset="125.7" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg>
+              <div class="conv-ring-label" id="conv-pct-label">0%</div>
+            </div>
+            <div>
+              <div class="metric-val" style="font-size:22px;line-height:1" id="d-conv">—</div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:2px" id="d-conv-sub">previous quarter</div>
+            </div>
+          </div>
+          <div style="font-size:11px;margin-top:5px" id="d-conv-prev"></div>
+        </div>
+
+        <!-- R2C3: Net growth (quarter start vs now, manual quarter-start input) -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-trending-up" style="font-size:13px"></i> Net growth <span id="r2-quarter-label" style="font-weight:400;color:var(--text-hint)"></span></div>
+          <div class="metric-val" id="d-net-growth" style="font-size:22px">—</div>
+          <div class="metric-sub" id="d-net-growth-sub">subs added minus cancelled</div>
+          <div style="margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Subs at quarter start</div>
+            <input type="number" id="quarter-start-subs" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+          </div>
+        </div>
+
+        <!-- R2C4: Avg income per individual -->
+        <div class="metric">
+          <div class="metric-label"><i class="ti ti-coin" style="font-size:13px"></i> Avg income / patient</div>
+          <div class="metric-val" id="d-avg-income">$0</div>
+          <div class="metric-sub" id="d-avg-income-sub">MRR ÷ active patients</div>
+        </div>
+
+      </div><!-- end row 2 -->
+
+      <!-- Charts -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header"><div class="card-title">Subscriptions by plan</div><span class="badge b-oak">Live</span></div>
+          <div style="position:relative;width:100%;height:200px"><canvas id="planPieChart"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">MRR by plan</div><span class="badge b-ginger">Live</span></div>
+          <div style="position:relative;width:100%;height:200px"><canvas id="planMrrChart"></canvas></div>
+        </div>
+      </div>
+    </div><!-- end page-dashboard -->
+
+    <!-- ALERTS -->
+    <div class="page" id="page-alerts">
+      <div class="page-title">Alerts &amp; reminders</div>
+      <div class="page-sub">Things that need your attention today</div>
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-header">
+          <div class="card-title">Re-eval threshold</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:var(--text-secondary)">Alert every</span>
+            <input type="number" id="reeval-threshold" value="15" min="1" max="100" style="width:52px;border:0.5px solid var(--border-strong);border-radius:6px;padding:4px 6px;font-size:13px;text-align:center;background:var(--surface);color:var(--text-primary)" onchange="saveReevalThreshold(this.value)"/>
+            <span style="font-size:12px;color:var(--text-secondary)">visits</span>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary)">Visit counts are tracked automatically when patients check in. Alerts appear here when anyone hits the threshold.</div>
+      </div>
+      <div id="alertsContent">
+        <div class="empty-state" style="padding:48px 20px">
+          <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
+          No alerts right now — you're all caught up!
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBERSHIPS -->
+    <div class="page" id="page-memberships">
+      <div class="page-title">Memberships</div>
+      <div class="page-sub">Plans, subscriptions, and patient groups</div>
+
+      <!-- SUMMARY METRICS -->
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px">
+        <div class="metric"><div class="metric-label">Active subscriptions</div><div class="metric-val" id="m-subs">0</div><div class="metric-sub">billing units paying monthly</div></div>
+        <div class="metric"><div class="metric-label">Total active patients</div><div class="metric-val" id="m-pts">0</div><div class="metric-sub">individuals covered</div></div>
+        <div class="metric"><div class="metric-label">Punch pass holders</div><div class="metric-val" id="m-pass">0</div><div class="metric-sub">tracked separately · receive SMS</div></div>
+        <div class="metric"><div class="metric-label">Total monthly revenue</div><div class="metric-val" id="m-mrr">$0</div><div class="metric-sub">subscriptions only</div></div>
+      </div>
+
+      <!-- MEMBERSHIP TABS -->
+      <div class="card" style="padding-bottom:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">
+          <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);width:100%;align-items:flex-end">
+            <button class="m-tab active" id="mtab-patients" onclick="showMTab('patients',this)">
+              <i class="ti ti-users" style="font-size:14px"></i> Patients <span class="m-tab-count" id="mtab-count-patients">0</span>
+            </button>
+            <button class="m-tab" id="mtab-active" onclick="showMTab('active',this)">
+              <i class="ti ti-id-badge" style="font-size:14px"></i> Active <span class="m-tab-count" id="mtab-count-active">0</span>
+            </button>
+            <button class="m-tab" id="mtab-punch" onclick="showMTab('punch',this)">
+              <i class="ti ti-ticket" style="font-size:14px"></i> Punch passes <span class="m-tab-count" id="mtab-count-punch">0</span>
+            </button>
+            <button class="m-tab" id="mtab-inactive" onclick="showMTab('inactive',this)">
+              <i class="ti ti-user-off" style="font-size:14px"></i> Inactive <span class="m-tab-count" id="mtab-count-inactive">0</span>
+            </button>
+            <button class="m-tab" id="mtab-frozen" onclick="showMTab('frozen',this)">
+              <i class="ti ti-snowflake" style="font-size:14px"></i> Frozen <span class="m-tab-count" id="mtab-count-frozen">0</span>
+            </button>
+            <button class="m-tab" id="mtab-plans" onclick="showMTab('plans',this)">
+              <i class="ti ti-layout-grid" style="font-size:14px"></i> Plans <span class="m-tab-count" id="mtab-count-plans">0</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: PATIENTS (imported, unsorted) -->
+      <div id="mview-patients" class="m-tab-view">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Imported patients</div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Review each patient and move them to Active, Punch pass, or mark Inactive</div>
+            </div>
+          </div>
+          <div id="patientStagingList"><div class="empty-state"><i class="ti ti-file-import"></i>No patients yet — use Jane sync to import</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: ACTIVE SUBSCRIPTIONS -->
+      <div id="mview-active" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Active subscriptions</div>
+            <button class="primary-btn" style="padding:6px 12px;font-size:12px;gap:5px" onclick="openSubModal()"><i class="ti ti-plus"></i> Add subscription</button>
+          </div>
+          <div id="subGroupList"><div class="empty-state"><i class="ti ti-users"></i>No active subscriptions yet</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: PUNCH PASSES -->
+      <div id="mview-punch" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Punch pass holders</div>
+            <button class="primary-btn" style="padding:6px 12px;font-size:12px;gap:5px" onclick="openPassModal()"><i class="ti ti-plus"></i> Add pass</button>
+          </div>
+          <div id="passHolderList"><div class="empty-state"><i class="ti ti-ticket"></i>No punch pass holders yet</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: INACTIVE -->
+      <div id="mview-inactive" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Inactive patients</div>
+            <span class="badge b-gray" id="inactive-count-badge">0 inactive</span>
+          </div>
+          <div id="inactiveList"><div class="empty-state"><i class="ti ti-user-off"></i>No inactive patients</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: FROZEN -->
+      <div id="mview-frozen" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Frozen plans</div>
+            <span class="badge" style="background:#dbeafe;color:#1e40af" id="frozen-count-badge">0 frozen</span>
+          </div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">Patients whose plans are temporarily paused. They can be moved back to Active when they return.</div>
+          <div id="frozenList"><div class="empty-state"><i class="ti ti-snowflake"></i>No frozen plans</div></div>
+        </div>
+      </div>
+
+      <!-- TAB: PLANS -->
+      <div id="mview-plans" class="m-tab-view" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Subscription plan breakdown</div>
+            <button class="primary-btn" style="padding:6px 12px;font-size:12px;gap:5px" onclick="openPlanModal()"><i class="ti ti-plus"></i> Add plan</button>
+          </div>
+          <div class="tier-grid" id="tierCards">
+            <div class="empty-state" style="grid-column:1/-1;padding:24px"><i class="ti ti-id-badge"></i>No plans yet — add your first plan above</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CHECK-IN -->
+    <div class="page" id="page-checkin">
+      <div class="page-title">Check-in kiosk</div>
+      <div class="page-sub">Patients scan your printed QR code to join the queue</div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Live waiting queue</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="badge b-honey" id="queueBadge">0 waiting</span>
+            <button class="sm-btn" onclick="clearQueue()" style="font-size:11px;color:#a0402a;border-color:#d4a090" title="Clear today's queue"><i class="ti ti-trash" style="font-size:12px"></i> Clear</button>
+          </div>
+        </div>
+
+        <!-- URL pill — subtle reference link -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding:8px 12px;background:var(--linen);border-radius:8px">
+          <i class="ti ti-qrcode" style="font-size:14px;color:var(--text-hint)"></i>
+          <span style="font-size:12px;color:var(--text-secondary)">Check-in URL:</span>
+          <span class="url-pill" id="qr-url-pill" style="margin-top:0;background:none;padding:0;font-size:12px">Set your URL in Settings</span>
+          <button class="sm-btn" style="font-size:11px;margin-left:auto" onclick="printQR()"><i class="ti ti-printer" style="font-size:12px"></i> Reprint QR</button>
+        </div>
+
+        <div class="queue-list" id="kioskQueue"><div class="empty-state"><i class="ti ti-clock"></i>Queue is empty — patients will appear here when they scan in</div></div>
+
+        <div style="margin-top:14px;border-top:0.5px solid var(--border);padding-top:14px">
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">Manual check-in</div>
+          <div style="display:flex;gap:8px">
+            <input type="text" id="kioskName" placeholder="Patient full name" class="field-input" style="margin-bottom:0;flex:1"/>
+            <button class="primary-btn" style="padding:8px 14px;white-space:nowrap" onclick="kioskCheckIn()"><i class="ti ti-check"></i> Check in</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMS -->
+    <div class="page" id="page-sms">
+      <div class="page-title">Mass SMS</div>
+      <div class="page-sub">Clinic-wide messages from your Twilio number</div>
+      <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Requires a Twilio account. Add your credentials in Settings. All automated alerts send from this same number.</span></div>
+      <div class="two-col">
+        <div class="card">
+          <div style="margin-bottom:13px"><label class="field-label">Send to</label><select id="smsTier" onchange="updateSmsCount()" class="sms-select"></select></div>
+          <div style="margin-bottom:13px"><label class="field-label">Template</label>
+            <select onchange="fillTemplate(this.value)" class="sms-select">
+              <option value="">— choose a template —</option>
+              <option value="closure">Clinic closure</option>
+              <option value="holiday">Holiday hours</option>
+              <option value="reminder">Appointment reminder</option>
+              <option value="pass_low">Punch pass running low</option>
+              <option value="custom">Custom message</option>
+            </select>
+          </div>
+          <div style="margin-bottom:13px"><label class="field-label">Message <span id="charCount" style="font-weight:400">(0/160)</span></label><textarea id="smsBody" placeholder="Type your message…" oninput="updateChar(this)" class="sms-textarea"></textarea></div>
+          <div style="font-size:12px;color:var(--oak);font-weight:500;margin-bottom:10px" id="recipientLine">—</div>
+          <button class="primary-btn" id="sendSmsBtn" onclick="sendSMS()"><i class="ti ti-send"></i> Send SMS</button>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">Message preview</div>
+          <div style="background:var(--linen);border-radius:14px;padding:18px;min-height:110px">
+            <div style="background:#dfd3c3;border-radius:14px 14px 3px 14px;padding:9px 12px;font-size:13px;color:#2c2a24;max-width:85%;margin-left:auto" id="previewBubble">Your message will appear here.</div>
+          </div>
+          <div style="margin-top:16px"><div style="font-size:12px;font-weight:500;color:var(--text-secondary);margin-bottom:8px">Send history</div><div id="sendHistory"><div class="empty-state" style="padding:14px"><i class="ti ti-message-off"></i>No messages sent yet</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JANE SYNC -->
+    <div class="page" id="page-janesync">
+      <div class="page-title">Jane sync</div>
+      <div class="page-sub">Drop your Jane Patient List CSV to update SpinePoint — takes under 2 minutes</div>
+
+      <div class="jane-note"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>In Jane: <strong>Reports → List → Active patients → ⋯ → Export to Excel</strong>. Open in Google Sheets, File → Download → CSV. Then drop it below.</span></div>
+
+      <!-- DROP ZONE -->
+      <div class="card" id="dropZoneCard">
+        <div id="dropZone" style="border:1.5px dashed var(--border-strong);border-radius:10px;padding:40px 20px;text-align:center;cursor:pointer;transition:.15s" ondragover="dzOver(event)" ondragleave="dzLeave(event)" ondrop="dzDrop(event)" onclick="document.getElementById('csvFileInput').click()">
+          <i class="ti ti-upload" style="font-size:32px;color:var(--sage);display:block;margin-bottom:10px"></i>
+          <div style="font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px">Drop your Jane CSV here</div>
+          <div style="font-size:12px;color:var(--text-secondary)">or click to browse — accepts .csv files only</div>
+          <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleFileSelect(this)"/>
+        </div>
+      </div>
+
+      <!-- PREVIEW / RESULTS (hidden until file loaded) -->
+      <div id="syncPreview" style="display:none">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title" id="syncPreviewTitle">Preview</div>
+            <div style="display:flex;gap:8px">
+              <button class="sm-btn" onclick="resetSync()"><i class="ti ti-x" style="font-size:12px"></i> Clear</button>
+              <button class="primary-btn" style="padding:7px 16px;font-size:13px" id="confirmSyncBtn" onclick="confirmSync()"><i class="ti ti-check"></i> Confirm sync</button>
+            </div>
+          </div>
+
+          <!-- SUMMARY PILLS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="syncSummaryPills"></div>
+
+          <!-- TABS -->
+          <div style="display:flex;gap:0;border-bottom:0.5px solid var(--border);margin-bottom:14px">
+            <button class="sync-tab active" id="tab-new" onclick="showSyncTab('new',this)">New patients</button>
+            <button class="sync-tab" id="tab-update" onclick="showSyncTab('update',this)">Updates</button>
+            <button class="sync-tab" id="tab-inactive" onclick="showSyncTab('inactive',this)">Inactive in Jane</button>
+            <button class="sync-tab" id="tab-skip" onclick="showSyncTab('skip',this)">No change</button>
+          </div>
+
+          <div id="sync-tab-new" class="sync-tab-content"></div>
+          <div id="sync-tab-update" class="sync-tab-content" style="display:none"></div>
+          <div id="sync-tab-inactive" class="sync-tab-content" style="display:none"></div>
+          <div id="sync-tab-skip" class="sync-tab-content" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- SYNC HISTORY -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">Sync history</div></div>
+        <div id="syncHistory"><div class="empty-state" style="padding:16px"><i class="ti ti-history"></i>No syncs yet</div></div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Practice info, integrations, and preferences</div>
+      <div class="card">
+        <div class="settings-title">Practice information</div>
+        <div class="inline-row">
+          <div><label class="field-label">Practice name</label><input type="text" class="field-input" id="set-name" placeholder="e.g. SpinePoint Chiropractic" oninput="saveSetting('practiceName',this.value);updateLabels()"/></div>
+          <div><label class="field-label">Phone number</label><input type="text" class="field-input" id="set-phone" placeholder="(801) 555-1234" oninput="saveSetting('phone',this.value)"/></div>
+        </div>
+        <div class="inline-row">
+          <div><label class="field-label">Check-in page URL</label><input type="text" class="field-input" id="set-url" placeholder="yourpractice.com/checkin" oninput="saveSetting('checkinUrl',this.value);refreshQR()"/></div>
+
+        </div>
+        <div><label class="field-label">Overage visit price ($)</label><input type="number" class="field-input" id="set-overage" placeholder="25" style="max-width:160px" oninput="saveSetting('overagePrice',this.value)"/></div>
+        <div style="margin-top:13px"><label class="field-label">Google Apps Script URL <span style="color:var(--text-hint);font-weight:400">— paste after deploying (enables live queue)</span></label><input type="text" class="field-input" id="set-script-url" placeholder="https://script.google.com/macros/s/…/exec" value="https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec" oninput="saveSetting('appsScriptUrl',this.value);startPolling()"/></div>
+      </div>
+      <div class="card">
+        <div class="settings-title">Twilio SMS</div>
+        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Sign up at twilio.com · ~$1/mo for a number · ~$0.0075 per text</span></div>
+        <div class="inline-row">
+          <div><label class="field-label">Account SID</label><input type="text" class="field-input" id="set-sid" placeholder="ACxxxxxxxxxxxxxxxx" oninput="saveSetting('twilioSid',this.value)"/></div>
+          <div><label class="field-label">Auth Token</label><input type="password" class="field-input" id="set-token" placeholder="••••••••••••" oninput="saveSetting('twilioToken',this.value)"/></div>
+        </div>
+        <div><label class="field-label">Twilio phone number</label><input type="text" class="field-input" id="set-twilio-phone" placeholder="+18015551234" style="max-width:220px" oninput="saveSetting('twilioPhone',this.value)"/></div>
+      </div>
+      <div class="card">
+        <div class="settings-title">Jane API</div>
+        <div class="jane-note" style="margin-bottom:16px"><i class="ti ti-info-circle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Contact Jane support to request API access. Once approved, paste your key below.</span></div>
+        <div class="inline-row">
+          <div><label class="field-label">Jane subdomain</label><input type="text" class="field-input" id="set-jane-sub" placeholder="yourpractice" oninput="saveSetting('janeSubdomain',this.value)"/></div>
+          <div><label class="field-label">API key</label><input type="password" class="field-input" id="set-jane-key" placeholder="••••••••••••" oninput="saveSetting('janeKey',this.value)"/></div>
+        </div>
+        <button class="sm-btn primary" onclick="showToast('Jane connection saved')"><i class="ti ti-plug" style="font-size:13px"></i> Save &amp; test connection</button>
+      </div>
+    </div>
+
+    <!-- PLAN MODAL -->
+    <div class="modal-overlay" id="planModal" onclick="handleOverlay(event,'planModal')">
+      <div class="modal-box">
+        <div class="modal-title" id="planModalTitle">Add plan</div>
+        <input type="hidden" id="pm-id"/>
+        <label class="field-label">Plan name</label><input type="text" class="field-input" id="pm-name" placeholder="e.g. Individual, Couple, Family, Flex"/>
+        <label class="field-label">Price per month ($)</label><input type="number" class="field-input" id="pm-price" min="0" placeholder="99"/>
+        <label class="field-label">Max members per subscription</label>
+        <select class="field-input" id="pm-maxmembers">
+          <option value="1">1 (Individual)</option>
+          <option value="2">2 (Couple)</option>
+          <option value="5">Up to 5 (Family)</option>
+          <option value="1" selected>1 (Flex / single visit)</option>
+        </select>
+        <div class="modal-actions"><button class="btn-cancel" onclick="closePlanModal()">Cancel</button><button class="btn-save" onclick="savePlan()">Save plan</button></div>
+      </div>
+    </div>
+
+    <!-- SUBSCRIPTION MODAL -->
+    <div class="modal-overlay" id="subModal" onclick="handleOverlay(event,'subModal')">
+      <div class="modal-box">
+        <div class="modal-title" id="subModalTitle">Add subscription</div>
+        <input type="hidden" id="sm-id"/>
+        <label class="field-label">Account / family name</label><input type="text" class="field-input" id="sm-name" placeholder="e.g. Smith Family, John Smith"/>
+        <label class="field-label">Plan</label><select class="field-input" id="sm-plan"></select>
+        <label class="field-label">Monthly fee ($) <span style="color:var(--text-hint);font-weight:400">— auto-fills from plan, edit if different (e.g. 6+ family member)</span></label>
+        <input type="number" class="field-input" id="sm-fee" min="0" placeholder="0"/>
+        <label class="field-label">Primary / account holder name</label><input type="text" class="field-input" id="sm-primary" placeholder="e.g. John Smith"/>
+        <label class="field-label">Primary phone</label><input type="text" class="field-input" id="sm-phone" placeholder="(801) 555-1234"/>
+        <label class="field-label">Additional members <span style="color:var(--text-hint);font-weight:400">— one per line</span></label>
+        <textarea class="field-input" id="sm-members" placeholder="Sarah Smith&#10;Tommy Smith&#10;Emily Smith" rows="4"></textarea>
+        <label class="field-label">Member phone numbers <span style="color:var(--text-hint);font-weight:400">— one per line, same order as members above</span></label>
+        <textarea class="field-input" id="sm-member-phones" placeholder="8015551234&#10;8015555678&#10;8015559012" rows="4"></textarea>
+        <label class="field-label">Member since</label><input type="date" class="field-input" id="sm-since"/>
+        <div class="modal-actions"><button class="btn-cancel" onclick="closeSubModal()">Cancel</button><button class="btn-save" onclick="saveSub()">Save subscription</button></div>
+      </div>
+    </div>
+
+    <!-- PASS MODAL -->
+    <div class="modal-overlay" id="passModal" onclick="handleOverlay(event,'passModal')">
+      <div class="modal-box">
+        <div class="modal-title" id="passModalTitle">Add punch pass</div>
+        <input type="hidden" id="pass-id"/>
+        <label class="field-label">Account / pass name</label><input type="text" class="field-input" id="pass-name" placeholder="e.g. Jane Doe or Smith Couple"/>
+        <label class="field-label">Primary holder</label><input type="text" class="field-input" id="pass-primary" placeholder="e.g. Jane Doe"/>
+        <label class="field-label">Phone</label><input type="text" class="field-input" id="pass-phone" placeholder="(801) 555-1234"/>
+        <label class="field-label">Additional members <span style="color:var(--text-hint);font-weight:400">— one per line (optional, e.g. for a couple pass)</span></label>
+        <textarea class="field-input" id="pass-members" placeholder="e.g. John Doe" rows="3"></textarea>
+        <label class="field-label">Visits remaining</label><input type="number" class="field-input" id="pass-visits" min="0" max="12" placeholder="12"/>
+        <label class="field-label">Purchase date</label><input type="date" class="field-input" id="pass-date"/>
+        <div class="modal-actions"><button class="btn-cancel" onclick="closePassModal()">Cancel</button><button class="btn-save" onclick="savePass()">Save pass</button></div>
+      </div>
+    </div>
+
+  </main>
 </div>
 
+<div class="toast-wrap"><div class="toast" id="toast"><i class="ti ti-circle-check" style="color:var(--honey)"></i><span id="toastMsg"></span></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ── CONFIG ─────────────────────────────────────────────────────────
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
-const SUPABASE_URL = 'https://eawvjsmnmagshcgaciwb.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_mI_1YVRrWTBzJnt3rdB6vA_ZO6W3K5A';
-let PRACTICE_NAME = 'Thrive Chiropractic'; // fallback while loading
+const PCOLS=['#62684c','#d2985a','#935b38','#acad96','#d0b59e','#4e513b','#7a8c5e','#c4894a'];
+const PBGS=['#e8ece0','#f5e6cc','#f0e0d4','#eaebe3','#f5e8dc','#d8dbd0','#edf0e5','#faebd7'];
+const PTXT=['#3a3f28','#6b3f0e','#5a2e12','#3a3c28','#5a3a20','#2c2e1c','#3a4a28','#5a3a10'];
 
-async function loadPracticeName(){
+const SUPABASE_URL='https://eawvjsmnmagshcgaciwb.supabase.co';
+const SUPABASE_KEY='sb_publishable_mI_1YVRrWTBzJnt3rdB6vA_ZO6W3K5A';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let plans=[];
+let subs=[];
+let passes=[];
+let queue=[];
+let settings={appsScriptUrl:'https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec'};
+let sendHistory=[];
+let pieChart=null,mrrChart=null;
+let dataReady=false;
+
+// ── Map DB rows (snake_case) <-> app objects (camelCase) ──────────────
+function dbPlanToApp(r){return {id:r.id,name:r.name,price:Number(r.price),maxMembers:r.max_members};}
+function dbSubToApp(r){return {id:r.id,groupName:r.group_name,planId:r.plan_id,fee:Number(r.fee),primary:r.primary_holder,phone:r.phone,members:r.members||[],memberPhones:r.member_phones||[],since:r.since,active:r.active,needsPlan:r.needs_plan,frozen:r.frozen||false};}
+function dbPassToApp(r){return {id:r.id,name:r.name,primary:r.primary_holder,phone:r.phone,members:r.members||[],memberPhones:r.member_phones||[],visits:r.visits,date:r.purchase_date,active:r.active};}
+function dbQueueToApp(r){return {id:r.id,name:r.name,time:r.time_label,status:r.status,visitCount:r.visit_count};}
+function dbSettingsToApp(r){return {practiceName:r.practice_name,phone:r.phone,checkinUrl:r.checkin_url,overagePrice:r.overage_price,twilioSid:r.twilio_sid,twilioToken:r.twilio_token,twilioPhone:r.twilio_phone,janeSubdomain:r.jane_subdomain,janeKey:r.jane_key,appsScriptUrl:r.apps_script_url,quarterlyStats:r.quarterly_stats||{}};}
+
+// ── Load all data from Supabase on startup ─────────────────────────────
+async function loadAllData(){
   try{
-    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    const { data, error } = await sb.from('settings').select('practice_name').eq('id',1).single();
-    if(!error && data && data.practice_name){
-      PRACTICE_NAME = data.practice_name;
+    const [plansR,subsR,passesR,queueR,settingsR]=await Promise.all([
+      sb.from('plans').select('*').order('id'),
+      sb.from('subscriptions').select('*').order('id'),
+      sb.from('punch_passes').select('*').order('id'),
+      sb.from('queue').select('*').order('id'),
+      sb.from('settings').select('*').eq('id',1).single()
+    ]);
+    plans=(plansR.data||[]).map(dbPlanToApp);
+    subs=(subsR.data||[]).map(dbSubToApp);
+    passes=(passesR.data||[]).map(dbPassToApp);
+    queue=(queueR.data||[]).map(dbQueueToApp);
+    if(settingsR.data){
+      const loaded=dbSettingsToApp(settingsR.data);
+      Object.keys(loaded).forEach(k=>{ if(loaded[k]!==null && loaded[k]!==undefined) settings[k]=loaded[k]; });
     }
-  }catch(e){ /* keep fallback name */ }
-  document.getElementById('practiceName').textContent = PRACTICE_NAME;
-  document.title = 'Check In — ' + PRACTICE_NAME;
-}
-loadPracticeName();
-
-function submitCheckIn(){
-  const name = document.getElementById('nameInput').value.trim();
-  if(!name){ shake(); return; }
-
-  const btn = document.getElementById('submitBtn');
-  btn.disabled = true;
-  btn.textContent = 'Checking you in…';
-
-  const url = SCRIPT_URL + '?name=' + encodeURIComponent(name);
-
-  fetch(url, {method:'GET', mode:'no-cors'})
-    .then(()=>showSuccess(name))
-    .catch(()=>showSuccess(name)); // no-cors always resolves, treat as success
+    dataReady=true;
+  }catch(err){
+    console.log('Supabase load error:',err);
+    showToast('Could not load data from Supabase — check connection');
+  }
 }
 
-function showSuccess(name){
-  document.getElementById('formCard').style.display = 'none';
-  const wrap = document.getElementById('statusWrap');
-  wrap.style.display = 'block';
-  document.getElementById('statusIcon').className = 'status-icon success';
-  document.getElementById('statusIcon').textContent = '✓';
-  document.getElementById('statusTitle').textContent = 'You\'re checked in, ' + name.split(' ')[0] + '!';
-  document.getElementById('statusSub').textContent = 'Have a seat and we\'ll be right with you.';
-  document.getElementById('tryAgainBtn').style.display = 'inline-block';
+// Legacy no-op kept so existing calls to persist() don't break anything;
+// real saving now happens immediately per-action via the save*ToDb functions below.
+function persist(){}
+
+async function saveSetting(k,v){
+  settings[k]=v;
+  const colMap={practiceName:'practice_name',phone:'phone',checkinUrl:'checkin_url',overagePrice:'overage_price',twilioSid:'twilio_sid',twilioToken:'twilio_token',twilioPhone:'twilio_phone',janeSubdomain:'jane_subdomain',janeKey:'jane_key',appsScriptUrl:'apps_script_url'};
+  const col=colMap[k];
+  if(!col)return;
+  try{
+    await sb.from('settings').update({[col]:v}).eq('id',1);
+  }catch(err){console.log('Save setting error:',err);}
 }
 
-function showError(msg){
-  document.getElementById('formCard').style.display = 'none';
-  const wrap = document.getElementById('statusWrap');
-  wrap.style.display = 'block';
-  document.getElementById('statusIcon').className = 'status-icon error';
-  document.getElementById('statusIcon').textContent = '!';
-  document.getElementById('statusTitle').textContent = 'Something went wrong';
-  document.getElementById('statusSub').textContent = msg || 'Please see the front desk to check in.';
-  document.getElementById('tryAgainBtn').style.display = 'inline-block';
+function nav(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  closeAllMenus();
+  if(id==='memberships')renderMemberships();
+  if(id==='checkin'){renderKioskQueue();refreshQR();}
+  if(id==='alerts')renderAlerts();
+  if(id==='janesync')renderSyncHistory();
+  if(id==='sms')buildSmsAudience();
+  if(id==='dashboard')renderDashboard();
 }
 
-function resetForm(){
-  document.getElementById('nameInput').value = '';
-  document.getElementById('submitBtn').disabled = false;
-  document.getElementById('submitBtn').textContent = 'Check in';
-  document.getElementById('formCard').style.display = 'block';
-  document.getElementById('statusWrap').style.display = 'none';
-  document.getElementById('nameInput').focus();
+function updateLabels(){
+  const n=settings.practiceName||'Your Practice';
+  const m=new Date().toLocaleString('en-US',{month:'long',year:'numeric'});
+  document.getElementById('sidebar-practice-name').textContent=n;
+  document.getElementById('dash-title').textContent=n+' — overview';
+  document.getElementById('dash-sub').textContent=m+' · cash-based membership practice';
+  const qrName=document.getElementById('qr-practice-name');
+  if(qrName)qrName.textContent=n;
 }
 
-function shake(){
-  const inp = document.getElementById('nameInput');
-  inp.style.borderColor = '#935b38';
-  inp.style.animation = 'none';
-  setTimeout(()=>{ inp.style.borderColor = ''; }, 1000);
-  inp.focus();
+function loadSettings(){
+  const map={'set-name':'practiceName','set-phone':'phone','set-url':'checkinUrl','set-overage':'overagePrice','set-sid':'twilioSid','set-token':'twilioToken','set-twilio-phone':'twilioPhone','set-jane-sub':'janeSubdomain','set-jane-key':'janeKey','set-script-url':'appsScriptUrl'};
+  Object.entries(map).forEach(([id,k])=>{const el=document.getElementById(id);if(el&&settings[k]!==undefined)el.value=settings[k];});
 }
+
+// ── QR ──────────────────────────────────────────────────────────────
+function refreshQR(){
+  const url=settings.checkinUrl||'https://yourpractice.com/checkin';
+  const pill=document.getElementById('qr-url-pill');
+  if(pill)pill.textContent=url;
+  const c=document.getElementById('qrCodeContainer');
+  if(!c)return;
+  c.innerHTML='';
+  new QRCode(c,{text:url,width:156,height:156,colorDark:'#4e513b',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+}
+function printQR(){
+  const url=settings.checkinUrl||'https://yourpractice.com/checkin';
+  const name=settings.practiceName||'Your Practice';
+  const w=window.open('','_blank','width=420,height=520');
+  w.document.write(`<html><head><title>${name} Check-in QR</title><style>body{font-family:system-ui,sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#f5f0e8}.wrap{text-align:center;padding:36px;border:0.5px solid #dfd3c3;border-radius:14px;background:#fff;max-width:320px}h2{font-size:16px;font-weight:500;margin:0 0 4px;color:#2c2a24}p{font-size:13px;color:#6b6456;margin:0 0 22px}.frame{border:2px solid #4e513b;border-radius:9px;padding:12px;display:inline-block}.url{font-size:11px;color:#acad96;font-family:monospace;margin-top:12px}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body><div class="wrap"><h2>${name}</h2><p>Scan to check in for your appointment</p><div class="frame" id="qr"></div><div class="url">${url}</div></div><script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"><\/script><script>new QRCode(document.getElementById("qr"),{text:"${url}",width:190,height:190,colorDark:"#4e513b",colorLight:"#fff"});setTimeout(()=>window.print(),800)<\/script></body></html>`);
+  w.document.close();
+}
+
+// ── PLAN MODAL ────────────────────────────────────────────────────────
+function openPlanModal(id){
+  const p=id?plans.find(x=>x.id===id):null;
+  document.getElementById('planModalTitle').textContent=p?'Edit plan':'Add plan';
+  document.getElementById('pm-id').value=id||'';
+  document.getElementById('pm-name').value=p?p.name:'';
+  document.getElementById('pm-price').value=p?p.price:'';
+  document.getElementById('pm-maxmembers').value=p?p.maxMembers:1;
+  document.getElementById('planModal').classList.add('open');
+}
+function closePlanModal(){document.getElementById('planModal').classList.remove('open');}
+async function savePlan(){
+  const id=document.getElementById('pm-id').value;
+  const name=document.getElementById('pm-name').value.trim();
+  if(!name){showToast('Please enter a plan name');return;}
+  const price=parseFloat(document.getElementById('pm-price').value)||0;
+  const maxMembers=parseInt(document.getElementById('pm-maxmembers').value)||1;
+  try{
+    if(id){
+      const{data,error}=await sb.from('plans').update({name,price,max_members:maxMembers}).eq('id',+id).select().single();
+      if(error)throw error;
+      const p=plans.find(x=>x.id===+id);
+      if(p)Object.assign(p,dbPlanToApp(data));
+      showToast(name+' updated');
+    } else {
+      const{data,error}=await sb.from('plans').insert({name,price,max_members:maxMembers}).select().single();
+      if(error)throw error;
+      plans.push(dbPlanToApp(data));
+      showToast(name+' added');
+    }
+    closePlanModal();renderMemberships();renderDashboard();
+  }catch(err){console.log('Save plan error:',err);showToast('Could not save plan');}
+}
+async function deletePlan(id){
+  closeAllMenus();
+  try{
+    const{error}=await sb.from('plans').delete().eq('id',id);
+    if(error)throw error;
+    plans=plans.filter(p=>p.id!==id);
+    renderMemberships();renderDashboard();showToast('Plan removed');
+  }catch(err){console.log('Delete plan error:',err);showToast('Could not delete plan');}
+}
+
+// ── SUB MODAL ─────────────────────────────────────────────────────────
+function openSubModal(id){
+  const s=id?subs.find(x=>x.id===id):null;
+  document.getElementById('subModalTitle').textContent=s?'Edit subscription':'Add subscription';
+  document.getElementById('sm-id').value=id||'';
+  const planSel=document.getElementById('sm-plan');
+  planSel.innerHTML=plans.length?plans.map((p,i)=>`<option value="${p.id}">${p.name} — $${p.price}/mo</option>`).join(''):'<option value="">— add a plan first —</option>';
+  if(s){
+    document.getElementById('sm-name').value=s.groupName||'';
+    document.getElementById('sm-fee').value=s.fee||'';
+    document.getElementById('sm-primary').value=s.primary||'';
+    document.getElementById('sm-phone').value=s.phone||'';
+    document.getElementById('sm-members').value=(s.members||[]).join('\n');
+    document.getElementById('sm-member-phones').value=(s.memberPhones||[]).join('\n');
+    document.getElementById('sm-since').value=s.since||'';
+    planSel.value=s.planId||'';
+  } else {
+    ['sm-name','sm-fee','sm-primary','sm-phone','sm-members','sm-member-phones','sm-since'].forEach(id=>document.getElementById(id).value='');
+  }
+  planSel.onchange=function(){
+    const p=plans.find(x=>x.id===+this.value);
+    if(p)document.getElementById('sm-fee').value=p.price;
+  };
+  document.getElementById('subModal').classList.add('open');
+}
+function closeSubModal(){document.getElementById('subModal').classList.remove('open');}
+async function saveSub(){
+  const id=document.getElementById('sm-id').value;
+  const groupName=document.getElementById('sm-name').value.trim();
+  if(!groupName){showToast('Please enter an account name');return;}
+  const planId=parseInt(document.getElementById('sm-plan').value)||null;
+  const fee=parseFloat(document.getElementById('sm-fee').value)||0;
+  const primary=document.getElementById('sm-primary').value.trim();
+  const phone=document.getElementById('sm-phone').value.trim();
+  const membersRaw=document.getElementById('sm-members').value;
+  const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
+  const memberPhonesRaw=document.getElementById('sm-member-phones').value;
+  const memberPhones=memberPhonesRaw.split('\n').map(p=>p.trim()).filter(Boolean);
+  const since=document.getElementById('sm-since').value||null;
+  const row={group_name:groupName,plan_id:planId,fee,primary_holder:primary,phone,members,member_phones:memberPhones,since,active:true,needs_plan:false};
+  try{
+    if(id){
+      const{data,error}=await sb.from('subscriptions').update(row).eq('id',+id).select().single();
+      if(error)throw error;
+      const s=subs.find(x=>x.id===+id);
+      if(s)Object.assign(s,dbSubToApp(data));
+      showToast(groupName+' updated');
+    } else {
+      const{data,error}=await sb.from('subscriptions').insert(row).select().single();
+      if(error)throw error;
+      subs.push(dbSubToApp(data));
+      showToast(groupName+' added');
+    }
+    closeSubModal();renderMemberships();renderDashboard();
+  }catch(err){console.log('Save sub error:',err);showToast('Could not save subscription');}
+}
+async function deleteSub(id){
+  try{
+    const{error}=await sb.from('subscriptions').delete().eq('id',id);
+    if(error)throw error;
+    subs=subs.filter(s=>s.id!==id);
+    renderMemberships();renderDashboard();showToast('Subscription removed');
+  }catch(err){console.log('Delete sub error:',err);showToast('Could not delete subscription');}
+}
+
+// ── PASS MODAL ────────────────────────────────────────────────────────
+function openPassModal(id){
+  const p=id?passes.find(x=>x.id===id):null;
+  document.getElementById('passModalTitle').textContent=p?'Edit punch pass':'Add punch pass';
+  document.getElementById('pass-id').value=id||'';
+  document.getElementById('pass-name').value=p?p.name:'';
+  document.getElementById('pass-primary').value=p?p.primary:'';
+  document.getElementById('pass-phone').value=p?p.phone:'';
+  document.getElementById('pass-members').value=p?(p.members||[]).join('\n'):'';
+  document.getElementById('pass-visits').value=p?p.visits:'';
+  document.getElementById('pass-date').value=p?p.date:'';
+  document.getElementById('passModal').classList.add('open');
+}
+function closePassModal(){document.getElementById('passModal').classList.remove('open');}
+async function savePass(){
+  const id=document.getElementById('pass-id').value;
+  const name=document.getElementById('pass-name').value.trim();
+  if(!name){showToast('Please enter a name');return;}
+  const primary=document.getElementById('pass-primary').value.trim();
+  const phone=document.getElementById('pass-phone').value.trim();
+  const membersRaw=document.getElementById('pass-members').value;
+  const members=membersRaw.split('\n').map(m=>m.trim()).filter(Boolean);
+  const visits=parseInt(document.getElementById('pass-visits').value)||0;
+  const date=document.getElementById('pass-date').value||null;
+  const row={name,primary_holder:primary,phone,members,visits,purchase_date:date,active:true};
+  try{
+    if(id){
+      const{data,error}=await sb.from('punch_passes').update(row).eq('id',+id).select().single();
+      if(error)throw error;
+      const p=passes.find(x=>x.id===+id);
+      if(p)Object.assign(p,dbPassToApp(data));
+      showToast(name+' updated');
+    } else {
+      const{data,error}=await sb.from('punch_passes').insert(row).select().single();
+      if(error)throw error;
+      passes.push(dbPassToApp(data));
+      showToast(name+' added');
+    }
+    closePassModal();renderMemberships();renderDashboard();
+  }catch(err){console.log('Save pass error:',err);showToast('Could not save pass');}
+}
+async function deletePass(id){
+  try{
+    const{error}=await sb.from('punch_passes').delete().eq('id',id);
+    if(error)throw error;
+    passes=passes.filter(p=>p.id!==id);
+    renderMemberships();renderDashboard();showToast('Pass removed');
+  }catch(err){console.log('Delete pass error:',err);showToast('Could not delete pass');}
+}
+
+// ── RENDER MEMBERSHIPS ────────────────────────────────────────────────
+function planColor(planId,type){
+  const idx=plans.findIndex(p=>p.id===planId);
+  const i=idx<0?0:idx;
+  return type==='col'?PCOLS[i%PCOLS.length]:type==='bg'?PBGS[i%PBGS.length]:PTXT[i%PTXT.length];
+}
+
+function showMTab(name,el){
+  document.querySelectorAll('.m-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.m-tab-view').forEach(v=>v.style.display='none');
+  el.classList.add('active');
+  document.getElementById('mview-'+name).style.display='block';
+}
+
+async function stagePatient(subId,action){
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    if(action==='active'){
+      const{error}=await sb.from('subscriptions').update({needs_plan:false}).eq('id',subId);
+      if(error)throw error;
+      s.needsPlan=false;
+      showToast(s.groupName+' moved to Active — edit to assign a plan');
+    } else if(action==='pass'){
+      const passRow={name:s.groupName,primary_holder:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,purchase_date:s.since||null,active:true};
+      const{data,error}=await sb.from('punch_passes').insert(passRow).select().single();
+      if(error)throw error;
+      passes.push(dbPassToApp(data));
+      const{error:delErr}=await sb.from('subscriptions').delete().eq('id',subId);
+      if(delErr)throw delErr;
+      subs=subs.filter(x=>x.id!==subId);
+      showToast(s.groupName+' moved to Punch passes');
+    } else if(action==='inactive'){
+      const{error}=await sb.from('subscriptions').update({active:false,needs_plan:false}).eq('id',subId);
+      if(error)throw error;
+      s.active=false;
+      s.needsPlan=false;
+      showToast(s.groupName+' marked inactive');
+    }
+    renderMemberships();renderDashboard();
+  }catch(err){console.log('Stage patient error:',err);showToast('Could not update patient');}
+}
+
+async function deleteStagedPatient(subId,name){
+  if(!confirm('Delete "'+name+'" completely? This cannot be undone — use this for duplicates from Jane sync.'))return;
+  try{
+    const{error}=await sb.from('subscriptions').delete().eq('id',subId);
+    if(error)throw error;
+    subs=subs.filter(x=>x.id!==subId);
+    renderMemberships();renderDashboard();
+    showToast(name+' deleted');
+  }catch(err){console.log('Delete staged patient error:',err);showToast('Could not delete patient');}
+}
+
+async function reactivatePatient(subId){
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({active:true,needs_plan:false}).eq('id',subId);
+    if(error)throw error;
+    s.active=true;
+    s.needsPlan=false;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' moved to Active');
+  }catch(err){console.log('Reactivate error:',err);showToast('Could not reactivate patient');}
+}
+
+// Move an active subscription to punch pass or inactive
+async function moveSubscription(subId,destination){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    if(destination==='inactive'){
+      const{error}=await sb.from('subscriptions').update({active:false,needs_plan:false}).eq('id',subId);
+      if(error)throw error;
+      s.active=false;s.needsPlan=false;
+      renderMemberships();renderDashboard();
+      showToast(s.groupName+' moved to Inactive');
+    } else if(destination==='punch'){
+      // Create a new punch pass from this subscription
+      const passRow={name:s.groupName,primary_holder:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,purchase_date:null,active:true};
+      const{data,error}=await sb.from('punch_passes').insert(passRow).select().single();
+      if(error)throw error;
+      passes.push(dbPassToApp(data));
+      // Mark the subscription inactive
+      const{error:err2}=await sb.from('subscriptions').update({active:false,needs_plan:false}).eq('id',subId);
+      if(err2)throw err2;
+      s.active=false;s.needsPlan=false;
+      renderMemberships();renderDashboard();
+      showToast(s.groupName+' moved to Punch passes');
+    }
+  }catch(err){console.log('Move subscription error:',err);showToast('Could not move patient');}
+}
+
+// Move a punch pass to active subscription or inactive
+async function movePass(passId,destination){
+  closeAllMenus();
+  const p=passes.find(x=>x.id===passId);
+  if(!p)return;
+  try{
+    if(destination==='inactive'){
+      const{error}=await sb.from('punch_passes').update({active:false}).eq('id',passId);
+      if(error)throw error;
+      p.active=false;
+      renderMemberships();renderDashboard();
+      showToast(p.name+' moved to Inactive');
+    } else if(destination==='active'){
+      // Create a new subscription placeholder
+      const row={group_name:p.name,plan_id:null,fee:0,primary_holder:p.primary||p.name,phone:p.phone,members:p.members||[],since:null,active:true,needs_plan:true};
+      const{data,error}=await sb.from('subscriptions').insert(row).select().single();
+      if(error)throw error;
+      subs.push(dbSubToApp(data));
+      // Deactivate the pass
+      const{error:err2}=await sb.from('punch_passes').update({active:false}).eq('id',passId);
+      if(err2)throw err2;
+      p.active=false;
+      renderMemberships();renderDashboard();
+      showToast(p.name+' moved to Active — assign a plan in the Patients tab');
+    }
+  }catch(err){console.log('Move pass error:',err);showToast('Could not move patient');}
+}
+
+// Move an inactive subscription directly to punch pass
+async function moveInactiveToPass(subId){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const passRow={name:s.groupName,primary_holder:s.primary||s.groupName,phone:s.phone,members:s.members||[],visits:parseInt(settings.passVisits)||12,purchase_date:null,active:true};
+    const{data,error}=await sb.from('punch_passes').insert(passRow).select().single();
+    if(error)throw error;
+    passes.push(dbPassToApp(data));
+    const{error:err2}=await sb.from('subscriptions').delete().eq('id',subId);
+    if(err2)throw err2;
+    subs=subs.filter(x=>x.id!==subId);
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' moved to Punch passes');
+  }catch(err){console.log('Move inactive to pass error:',err);showToast('Could not move patient');}
+}
+
+async function freezeSubscription(subId){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({frozen:true}).eq('id',subId);
+    if(error)throw error;
+    s.frozen=true;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' plan frozen');
+  }catch(err){console.log('Freeze error:',err);showToast('Could not freeze plan');}
+}
+
+async function unfreezeSubscription(subId){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({frozen:false,active:true,needs_plan:false}).eq('id',subId);
+    if(error)throw error;
+    s.frozen=false;s.active=true;s.needsPlan=false;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' plan unfrozen — moved back to Active');
+  }catch(err){console.log('Unfreeze error:',err);showToast('Could not unfreeze plan');}
+}
+
+async function moveFromFrozen(subId,destination){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({frozen:false,active:false,needs_plan:false}).eq('id',subId);
+    if(error)throw error;
+    s.frozen=false;s.active=false;s.needsPlan=false;
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' moved to Inactive');
+  }catch(err){console.log('Move from frozen error:',err);showToast('Could not move patient');}
+}
+
+function renderMemberships(){
+  const assigned=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen);
+  const unassigned=subs.filter(s=>s.active&&s.needsPlan&&!s.frozen);
+  const inactiveSubs=subs.filter(s=>!s.active&&!s.frozen);
+  const frozenSubs=subs.filter(s=>s.frozen);
+  const totalSubs=assigned.length;
+  const totalPts=assigned.reduce((a,s)=>a+1+(s.members||[]).length,0);
+  const totalMRR=assigned.reduce((a,s)=>a+s.fee,0);
+  const passCount=passes.filter(p=>p.active).length;
+
+  document.getElementById('m-subs').textContent=totalSubs;
+  document.getElementById('m-pts').textContent=totalPts;
+  document.getElementById('m-mrr').textContent='$'+totalMRR.toLocaleString();
+  document.getElementById('m-pass').textContent=passCount;
+
+  document.getElementById('mtab-count-patients').textContent=unassigned.length;
+  document.getElementById('mtab-count-active').textContent=totalSubs;
+  document.getElementById('mtab-count-punch').textContent=passCount;
+  document.getElementById('mtab-count-inactive').textContent=inactiveSubs.length;
+  document.getElementById('mtab-count-frozen').textContent=frozenSubs.length;
+  document.getElementById('mtab-count-plans').textContent=plans.length;
+
+  const cnt=document.getElementById('mtab-count-patients');
+  if(unassigned.length>0){cnt.style.background='#f5e6cc';cnt.style.color='#6b3f0e';}
+  else{cnt.style.background='';cnt.style.color='';}
+
+  // ── PATIENTS TAB ──
+  const sl=document.getElementById('patientStagingList');
+  if(!unassigned.length){
+    sl.innerHTML='<div class="empty-state"><i class="ti ti-circle-check" style="color:var(--oak)"></i>All patients sorted — nice work!</div>';
+  } else {
+    sl.innerHTML=unassigned.map(s=>{
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      return `<div class="staging-row">
+        <div class="avatar" style="background:var(--linen);color:var(--text-secondary)">${initials}</div>
+        <div class="staging-row-info">
+          <div class="staging-row-name">${s.groupName}</div>
+          <div class="staging-row-detail">${s.phone||'no phone'} · since ${since}</div>
+        </div>
+        <div class="staging-actions">
+          <button class="stage-btn active-btn" onclick="stagePatient(${s.id},'active')"><i class="ti ti-id-badge" style="font-size:12px"></i> Active</button>
+          <button class="stage-btn pass-btn" onclick="stagePatient(${s.id},'pass')"><i class="ti ti-ticket" style="font-size:12px"></i> Punch pass</button>
+          <button class="stage-btn inactive-btn" onclick="stagePatient(${s.id},'inactive')"><i class="ti ti-user-off" style="font-size:12px"></i> Inactive</button>
+          <button class="del-row-btn" onclick="deleteStagedPatient(${s.id},'${s.groupName.replace(/'/g,"\\'")}')" title="Delete this entry"><i class="ti ti-x"></i></button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── ACTIVE TAB ──
+  const subList=document.getElementById('subGroupList');
+  if(!assigned.length){
+    subList.innerHTML='<div class="empty-state"><i class="ti ti-users"></i>No active subscriptions yet</div>';
+  } else {
+    subList.innerHTML=assigned.map(s=>{
+      const plan=plans.find(p=>p.id===s.planId);
+      const ci=plan?plans.indexOf(plan):0;
+      const bg=PBGS[ci%PBGS.length];
+      const tc=PTXT[ci%PTXT.length];
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      const allMembers=[s.primary,...(s.members||[])].filter(Boolean);
+      return `<div class="sub-group">
+        <div class="sub-group-header">
+          <div class="sub-group-left">
+            <div class="sub-group-icon" style="background:${bg};color:${tc}">${initials}</div>
+            <div>
+              <div class="sub-group-name">${s.groupName}</div>
+              <div class="sub-group-plan">${plan?plan.name:'No plan — edit to assign'} · since ${since}${s.phone?' · '+s.phone:''}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div>
+              <div class="sub-group-fee">$${s.fee.toLocaleString()}/mo</div>
+              <div class="sub-group-fee-label">${allMembers.length} member${allMembers.length!==1?'s':''}</div>
+            </div>
+            <div style="position:relative">
+              <button class="menu-btn" style="position:static" onclick="toggleMenu('sub-${s.id}',event)"><i class="ti ti-dots-vertical"></i></button>
+              <div class="dropdown" id="menu-sub-${s.id}">
+                <div class="dropdown-item" onclick="openSubModal(${s.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit subscription</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="freezeSubscription(${s.id})"><i class="ti ti-snowflake" style="font-size:14px"></i> Freeze plan</div>
+                <div class="dropdown-item" onclick="moveSubscription(${s.id},'punch')"><i class="ti ti-ticket" style="font-size:14px"></i> Move to Punch pass</div>
+                <div class="dropdown-item" onclick="moveSubscription(${s.id},'inactive')"><i class="ti ti-user-off" style="font-size:14px"></i> Move to Inactive</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" onclick="deleteSub(${s.id})"><i class="ti ti-trash" style="font-size:14px"></i> Remove</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sub-group-body">
+          <div class="sub-group-section">
+            <div class="sub-section-label">Primary / account holder</div>
+            <span class="member-pill primary"><i class="ti ti-user" style="font-size:11px"></i>${s.primary||'—'}</span>
+          </div>
+          ${s.members&&s.members.length?`<div class="sub-group-section"><div class="sub-section-label">Members</div>${s.members.map(m=>`<span class="member-pill">${m}</span>`).join('')}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PUNCH PASSES TAB ──
+  const pl=document.getElementById('passHolderList');
+  const activePasses=passes.filter(p=>p.active);
+  if(!activePasses.length){
+    pl.innerHTML='<div class="empty-state"><i class="ti ti-ticket"></i>No punch pass holders yet</div>';
+  } else {
+    pl.innerHTML=activePasses.map(p=>{
+      const low=p.visits<=2;
+      const purchaseDate=p.date?new Date(p.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—';
+      const initials=(p.primary||p.name).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return `<div class="sub-group" style="${low?'border-color:#d4a090':''}">
+        <div class="sub-group-header" style="${low?'background:#fef5f0':''}">
+          <div class="sub-group-left">
+            <div class="sub-group-icon" style="background:${low?'#f5ddd8':'#f5e6cc'};color:${low?'#7a2e1e':'#6b3f0e'}"><i class="ti ti-ticket" style="font-size:15px"></i></div>
+            <div>
+              <div class="sub-group-name">${p.name}${low?` <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:#f5ddd8;color:#7a2e1e;margin-left:6px">⚠ ${p.visits} visit${p.visits!==1?'s':''} left</span>`:''}</div>
+              <div class="sub-group-plan">12-visit pass · ${p.phone||'no phone'} · purchased ${purchaseDate}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div><div class="sub-group-fee">${p.visits} / 12</div><div class="sub-group-fee-label">visits left</div></div>
+            <div style="position:relative">
+              <button class="menu-btn" style="position:static" onclick="toggleMenu('pass-${p.id}',event)"><i class="ti ti-dots-vertical"></i></button>
+              <div class="dropdown" id="menu-pass-${p.id}">
+                <div class="dropdown-item" onclick="openPassModal(${p.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit pass</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item" onclick="movePass(${p.id},'active')"><i class="ti ti-id-badge" style="font-size:14px"></i> Move to Active</div>
+                <div class="dropdown-item" onclick="movePass(${p.id},'inactive')"><i class="ti ti-user-off" style="font-size:14px"></i> Move to Inactive</div>
+                <div class="dropdown-divider"></div>
+                <div class="dropdown-item danger" onclick="deletePass(${p.id})"><i class="ti ti-trash" style="font-size:14px"></i> Remove</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="sub-group-body">
+          <div class="sub-group-section"><div class="sub-section-label">Primary holder</div><span class="member-pill primary"><i class="ti ti-user" style="font-size:11px"></i>${p.primary||p.name}</span></div>
+          ${p.members&&p.members.length?`<div class="sub-group-section"><div class="sub-section-label">Also on this pass</div>${p.members.map(m=>`<span class="member-pill">${m}</span>`).join('')}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── INACTIVE TAB ──
+  document.getElementById('inactive-count-badge').textContent=inactiveSubs.length+' inactive';
+  const il=document.getElementById('inactiveList');
+  if(!inactiveSubs.length){
+    il.innerHTML='<div class="empty-state"><i class="ti ti-user-off"></i>No inactive patients</div>';
+  } else {
+    il.innerHTML=inactiveSubs.map(s=>{
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      return `<div class="staging-row" style="opacity:0.75">
+        <div class="avatar" style="background:#f0ece6;color:#9c9181">${initials}</div>
+        <div class="staging-row-info">
+          <div class="staging-row-name">${s.groupName}</div>
+          <div class="staging-row-detail">${s.phone||'no phone'} · since ${since} · inactive</div>
+        </div>
+        <div class="staging-actions">
+          <button class="stage-btn active-btn" onclick="reactivatePatient(${s.id})"><i class="ti ti-rotate" style="font-size:12px"></i> Move to Active</button>
+          <button class="stage-btn pass-btn" onclick="moveInactiveToPass(${s.id})"><i class="ti ti-ticket" style="font-size:12px"></i> Move to Punch pass</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── FROZEN TAB ──
+  document.getElementById('frozen-count-badge').textContent=frozenSubs.length+' frozen';
+  const fl=document.getElementById('frozenList');
+  if(!frozenSubs.length){
+    fl.innerHTML='<div class="empty-state"><i class="ti ti-snowflake"></i>No frozen plans</div>';
+  } else {
+    fl.innerHTML=frozenSubs.map(s=>{
+      const plan=plans.find(p=>p.id===s.planId);
+      const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
+      return `<div class="staging-row" style="background:#eff6ff;border-color:#bfdbfe">
+        <div class="avatar" style="background:#dbeafe;color:#1e40af">${initials}</div>
+        <div class="staging-row-info">
+          <div class="staging-row-name">${s.groupName} <span style="font-size:11px;padding:2px 7px;border-radius:10px;background:#dbeafe;color:#1e40af;margin-left:4px">❄ frozen</span></div>
+          <div class="staging-row-detail">${plan?plan.name:'No plan'} · ${s.phone||'no phone'} · since ${since}</div>
+        </div>
+        <div class="staging-actions">
+          <button class="stage-btn active-btn" onclick="unfreezeSubscription(${s.id})"><i class="ti ti-sun" style="font-size:12px"></i> Unfreeze</button>
+          <button class="stage-btn inactive-btn" onclick="moveFromFrozen(${s.id},'inactive')"><i class="ti ti-user-off" style="font-size:12px"></i> Inactive</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PLANS TAB ──
+  const tc=document.getElementById('tierCards');
+  if(!plans.length){
+    tc.innerHTML='<div class="empty-state" style="grid-column:1/-1;padding:24px"><i class="ti ti-id-badge"></i>No plans yet</div>';
+  } else {
+    tc.innerHTML=plans.map((p,i)=>{
+      const col=PCOLS[i%PCOLS.length];
+      const planSubs=assigned.filter(s=>s.planId===p.id).length;
+      const planMRR=assigned.filter(s=>s.planId===p.id).reduce((a,s)=>a+s.fee,0);
+      const pct=totalSubs>0?Math.round(planSubs/totalSubs*100):0;
+      return `<div class="tier-card">
+        <div style="position:relative;float:right">
+          <button class="menu-btn" onclick="toggleMenu(${p.id},event)"><i class="ti ti-dots-vertical"></i></button>
+          <div class="dropdown" id="menu-${p.id}">
+            <div class="dropdown-item" onclick="openPlanModal(${p.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit plan</div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item danger" onclick="deletePlan(${p.id})"><i class="ti ti-trash" style="font-size:14px"></i> Delete plan</div>
+          </div>
+        </div>
+        <div class="tier-name" style="color:${col}">${p.name}</div>
+        <div class="tier-count">${planSubs} <span style="font-size:13px;font-weight:400;color:var(--text-secondary)">subs</span></div>
+        <div class="tier-mrr">$${planMRR.toLocaleString()}/mo · $${p.price}/mo per sub</div>
+        <div class="tier-bar-bg"><div class="tier-bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      </div>`;
+    }).join('');
+  }
+}
+
+
+// ── RENDER DASHBOARD ──────────────────────────────────────────────────
+function renderDashboard(){
+  updateLabels();
+  const activeSubs=subs.filter(s=>s.active);
+  const totalSubs=activeSubs.length;
+  const totalPts=activeSubs.reduce((a,s)=>a+1+(s.members||[]).length,0);
+  const totalMRR=activeSubs.reduce((a,s)=>a+s.fee,0);
+  const passCount=passes.filter(p=>p.active).length;
+  // Conversion and attrition — driven by manual inputs
+  updateQuarterlyStats();
+  // Row 1
+  document.getElementById('d-active-pts').textContent=totalSubs;
+  document.getElementById('d-active-pts-sub').textContent=totalPts+' patient'+(totalPts!==1?'s':'')+' covered';
+  document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
+  document.getElementById('d-mrr-sub').textContent='from '+totalSubs+' active subscription'+(totalSubs!==1?'s':'');
+  // Row 2
+  document.getElementById('d-pass').textContent=passCount;
+  const avgIncome=totalPts>0?Math.round(totalMRR/totalPts):0;
+  document.getElementById('d-avg-income').textContent='$'+avgIncome.toLocaleString();
+  document.getElementById('d-avg-income-sub').textContent=totalPts?'$'+totalMRR.toLocaleString()+' ÷ '+totalPts+' patients':'no patients yet';
+
+  if(pieChart){pieChart.destroy();pieChart=null;}
+  if(mrrChart){mrrChart.destroy();mrrChart=null;}
+  if(plans.length){
+    const subsByPlan=plans.map(p=>activeSubs.filter(s=>s.planId===p.id).length);
+    const mrrByPlan=plans.map(p=>activeSubs.filter(s=>s.planId===p.id).reduce((a,s)=>a+s.fee,0));
+    const colors=plans.map((_,i)=>PCOLS[i%PCOLS.length]);
+    pieChart=new Chart(document.getElementById('planPieChart'),{type:'doughnut',data:{labels:plans.map(p=>p.name),datasets:[{data:subsByPlan,backgroundColor:colors,borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11},color:'#6b6456'}}}}});
+    mrrChart=new Chart(document.getElementById('planMrrChart'),{type:'bar',data:{labels:plans.map(p=>p.name),datasets:[{label:'MRR',data:mrrByPlan,backgroundColor:colors,borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:v=>'$'+v.toLocaleString(),color:'#6b6456'},grid:{color:'#f0ece6'}}}}});
+  }
+}
+
+// ── QUEUE ─────────────────────────────────────────────────────────────
+function renderQueueItems(el,list){
+  el.innerHTML=list.map(q=>{
+    const sub=subs.find(s=>[s.primary,...(s.members||[])].some(m=>m&&m.toLowerCase()===q.name.toLowerCase()));
+    const plan=sub?plans.find(p=>p.id===sub.planId):null;
+    const ci=plan?plans.indexOf(plan):5;
+    return `<div class="queue-item">
+      <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${(q.name||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+      <div class="q-info"><div class="q-name">${q.name}</div><div class="q-detail">${plan?plan.name:'Walk-in'} · ${q.time}${q.visitCount?' · visit #'+q.visitCount+' this month':''}</div></div>
+      <div class="q-status"><div class="dot ${q.status==='in'?'dot-in':q.status==='ready'?'dot-ready':'dot-wait'}"></div>${q.status==='in'?'In session':q.status==='ready'?'Ready':'Waiting'}</div>
+    </div>`;
+  }).join('');
+}
+function renderKioskQueue(){
+  const waiting=queue.filter(q=>q.status!=='in');
+  document.getElementById('queueBadge').textContent=waiting.length+' waiting';
+  const el=document.getElementById('kioskQueue');
+  if(!waiting.length){el.innerHTML='<div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div>';}
+  else renderQueueItems(el,waiting);
+}
+async function kioskCheckIn(){
+  const name=document.getElementById('kioskName').value.trim();
+  if(!name)return;
+  const row={name,time_label:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),status:'waiting',visit_count:1};
+  try{
+    const{data,error}=await sb.from('queue').insert(row).select().single();
+    if(error)throw error;
+    queue.unshift(dbQueueToApp(data));
+    document.getElementById('kioskName').value='';
+    renderKioskQueue();renderDashboard();
+    trackVisitForPatient(name);
+    showToast(name+' checked in');
+  }catch(err){console.log('Check-in error:',err);showToast('Could not check in — try again');}
+}
+
+async function clearQueue(){
+  if(!confirm('Clear today\'s queue? This removes all check-ins from the screen but keeps them in your Google Sheet for records.'))return;
+  try{
+    const{error}=await sb.from('queue').delete().neq('id',0);
+    if(error)throw error;
+    queue=[];
+    renderKioskQueue();
+    renderDashboard();
+    showToast('Queue cleared');
+  }catch(err){
+    console.log('Clear queue error:',err);
+    showToast('Could not clear queue');
+  }
+}
+
+// ── SMS ───────────────────────────────────────────────────────────────
+function getAudiencePhones(v){
+  const nums=new Set();
+  // Add all phones from a subscription — holder + all member phones
+  const addSub=function(s){
+    if(s.phone&&s.phone.trim())nums.add(s.phone.trim());
+    (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())nums.add(p.trim());});
+  };
+  const addPass=function(p){
+    if(p.phone&&p.phone.trim())nums.add(p.phone.trim());
+    (p.memberPhones||[]).forEach(ph=>{if(ph&&ph.trim())nums.add(ph.trim());});
+  };
+  if(v==='all'){
+    subs.filter(s=>s.active).forEach(addSub);
+    passes.filter(p=>p.active).forEach(addPass);
+  } else if(v==='sub'){
+    subs.filter(s=>s.active).forEach(addSub);
+  } else if(v==='pass'){
+    passes.filter(p=>p.active).forEach(addPass);
+  } else if(v.startsWith('plan-')){
+    const pid=parseInt(v.replace('plan-',''));
+    subs.filter(s=>s.active&&s.planId===pid).forEach(addSub);
+  }
+  return Array.from(nums);
+}
+
+function buildSmsAudience(){
+  const allPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0)+passes.filter(p=>p.active).length;
+  const subPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0);
+  const passCount=passes.filter(p=>p.active).length;
+  let opts=`<option value="all">All active patients + punch passes (${allPts})</option>
+    <option value="sub">Subscribers only (${subPts})</option>
+    <option value="pass">Punch pass holders only (${passCount})</option>`;
+  plans.forEach(p=>{
+    const count=subs.filter(s=>s.active&&s.planId===p.id).reduce((a,s)=>a+1+(s.members||[]).length,0);
+    opts+=`<option value="plan-${p.id}">${p.name} plan (${count} patients)</option>`;
+  });
+  document.getElementById('smsTier').innerHTML=opts;
+  updateSmsCount();
+}
+function updateSmsCount(){
+  const v=document.getElementById('smsTier').value;
+  let count=0;
+  if(v==='all')count=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0)+passes.filter(p=>p.active).length;
+  else if(v==='sub')count=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0);
+  else if(v==='pass')count=passes.filter(p=>p.active).length;
+  else if(v.startsWith('plan-')){const pid=parseInt(v.replace('plan-',''));count=subs.filter(s=>s.active&&s.planId===pid).reduce((a,s)=>a+1+(s.members||[]).length,0);}
+  document.getElementById('recipientLine').textContent='Sending to '+count+' patient'+(count!==1?'s':'');
+}
+function updateChar(ta){document.getElementById('charCount').textContent='('+ta.value.length+'/160)';document.getElementById('previewBubble').textContent=ta.value||'Your message will appear here.';}
+function fillTemplate(v){
+  const name=settings.practiceName||'Your Practice';
+  const phone=settings.phone||'your clinic number';
+  const t={closure:`Hi {name}, ${name} will be CLOSED [DATE]. We apologize for the inconvenience. Please call ${phone} to reschedule. Thank you!`,holiday:`Hi {name}, holiday hours this week: [HOURS]. Closed [DAYS]. — ${name}`,reminder:`Hi {name}, reminder: you have an appointment tomorrow at ${name}. Reply CONFIRM or call ${phone} to reschedule.`,pass_low:`Hi {name}, your ${name} punch pass has 2 visits remaining. Call us to renew. We appreciate you!`,custom:''};
+  if(!v)return;
+  document.getElementById('smsBody').value=t[v]||'';
+  updateChar(document.getElementById('smsBody'));
+}
+let shArr=[];
+function sendSMS(){
+  const msg=document.getElementById('smsBody').value.trim();
+  if(!msg){showToast('Please write a message first');return;}
+  const tier=document.getElementById('smsTier');
+  const audienceVal=tier.value;
+  const audienceLabel=tier.options[tier.selectedIndex].text;
+  const phones=getAudiencePhones(audienceVal);
+
+  if(!phones.length){
+    showToast('No phone numbers found for this audience');
+    return;
+  }
+  if(!settings.appsScriptUrl){
+    showToast('Add your Apps Script URL in Settings first');
+    return;
+  }
+
+  const btn=document.getElementById('sendSmsBtn');
+  if(btn){btn.disabled=true;btn.textContent='Sending…';}
+
+  const url=settings.appsScriptUrl
+    +'?action=sendSms'
+    +'&numbers='+encodeURIComponent(phones.join(','))
+    +'&body='+encodeURIComponent(msg);
+
+  fetch(url,{method:'GET'})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data&&data.success){
+        shArr.unshift({
+          msg,
+          label:audienceLabel+' — '+data.sent+' sent'+(data.failed?', '+data.failed+' failed':''),
+          time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
+        });
+        renderSendHistory();
+        showToast(data.sent+' message'+(data.sent!==1?'s':'')+' sent'+(data.failed?', '+data.failed+' failed':''));
+      } else {
+        showToast('Send failed: '+(data&&data.error?data.error:'unknown error'));
+      }
+    })
+    .catch(function(e){
+      showToast('Could not reach Twilio relay — check Apps Script URL');
+      console.log('SMS send error:',e);
+    })
+    .finally(function(){
+      if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Send SMS';}
+    });
+}
+
+function renderSendHistory(){
+  document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
+}
+
+// ── DROPDOWNS ─────────────────────────────────────────────────────────
+// ── RE-EVAL ALERT SYSTEM ──────────────────────────────────────────────
+// ── RE-EVAL ALERT SYSTEM ──────────────────────────────────────────────
+// Visit counts tracked per individual patient name (auto from check-in)
+// Stored in localStorage — lightweight, desk-computer only
+
+function getReevalThreshold(){
+  return parseInt(localStorage.getItem('sp_reeval_threshold')||'15');
+}
+function saveReevalThreshold(val){
+  const n=Math.max(1,parseInt(val)||15);
+  localStorage.setItem('sp_reeval_threshold',n);
+  const inp=document.getElementById('reeval-threshold');
+  if(inp)inp.value=n;
+  renderAlerts();
+  showToast('Re-eval alert set to every '+n+' visits');
+}
+
+function getVisitCounts(){
+  return JSON.parse(localStorage.getItem('sp_visit_counts')||'{}');
+}
+function saveVisitCounts(data){
+  localStorage.setItem('sp_visit_counts',JSON.stringify(data));
+}
+function getDismissed(){
+  return JSON.parse(localStorage.getItem('sp_dismissed')||'{}');
+}
+function saveDismissed(data){
+  localStorage.setItem('sp_dismissed',JSON.stringify(data));
+}
+
+// Called automatically when a patient checks in (from kioskCheckIn and pollSheetQueue)
+function trackVisitForPatient(name){
+  if(!name)return;
+  const key=name.trim().toLowerCase();
+  const counts=getVisitCounts();
+  counts[key]=(counts[key]||0)+1;
+  saveVisitCounts(counts);
+  const threshold=getReevalThreshold();
+  if(counts[key]%threshold===0){
+    // Clear any existing dismissal for this milestone so the alert reappears
+    const dismissed=getDismissed();
+    const milestoneKey=key+'_'+counts[key];
+    delete dismissed[milestoneKey];
+    saveDismissed(dismissed);
+  }
+  renderAlerts();
+}
+
+function dismissAlert(nameKey,milestone){
+  const dismissed=getDismissed();
+  dismissed[nameKey+'_'+milestone]=true;
+  saveDismissed(dismissed);
+  renderAlerts();
+  showToast('Alert dismissed');
+}
+
+function clearDismissed(){
+  localStorage.removeItem('sp_dismissed');
+  renderAlerts();
+  showToast('All dismissed alerts cleared');
+}
+
+function renderAlerts(){
+  const threshold=getReevalThreshold();
+  const counts=getVisitCounts();
+  const dismissed=getDismissed();
+
+  // Update threshold input
+  const inp=document.getElementById('reeval-threshold');
+  if(inp)inp.value=threshold;
+
+  // Build list of all known individual patients
+  // Sources: primary holders, dependents from active subs, punch pass holders
+  const individuals=[];
+  subs.filter(s=>s.active&&!s.needsPlan).forEach(s=>{
+    if(s.primary)individuals.push({name:s.primary,plan:plans.find(p=>p.id===s.planId),group:s.groupName});
+    (s.members||[]).forEach(m=>{
+      if(m)individuals.push({name:m,plan:plans.find(p=>p.id===s.planId),group:s.groupName});
+    });
+  });
+  passes.filter(p=>p.active).forEach(p=>{
+    if(p.primary||p.name)individuals.push({name:p.primary||p.name,plan:null,group:p.name+' (pass)'});
+    (p.members||[]).forEach(m=>{
+      if(m)individuals.push({name:m,plan:null,group:p.name+' (pass)'});
+    });
+  });
+
+  // Categorise alerts
+  const dueAlerts=[];
+  individuals.forEach(ind=>{
+    const key=ind.name.trim().toLowerCase();
+    const visits=counts[key]||0;
+    if(visits>0&&visits%threshold===0){
+      const milestoneKey=key+'_'+visits;
+      if(!dismissed[milestoneKey]){
+        dueAlerts.push({...ind,key,visits,milestone:visits});
+      }
+    }
+  });
+
+  // Update sidebar dot
+  const alertDot=document.getElementById('alertDot');
+  if(alertDot)alertDot.style.display=dueAlerts.length?'block':'none';
+
+  const container=document.getElementById('alertsContent');
+  if(!container)return;
+
+  if(!dueAlerts.length){
+    container.innerHTML=`<div class="empty-state" style="padding:48px 20px">
+      <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
+      No alerts right now — you're all caught up!
+    </div>`;
+    return;
+  }
+
+  container.innerHTML=`
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Re-eval due</div>
+        <span class="badge b-red">${dueAlerts.length} patient${dueAlerts.length!==1?'s':''}</span>
+      </div>
+      ${dueAlerts.map(a=>{
+        const initials=a.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const planName=a.plan?a.plan.name:'Punch pass';
+        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:9px;background:#f5ddd8;border:0.5px solid #d4a090;margin-bottom:7px">
+          <div class="avatar" style="background:#f0e0d4;color:#5a2e12">${initials}</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${a.name}</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${planName} · ${a.group} · ${a.visits} visits — re-eval due</div>
+          </div>
+          <button class="sm-btn primary" style="font-size:12px;white-space:nowrap" onclick="dismissAlert('${a.key}',${a.milestone})"><i class="ti ti-check" style="font-size:12px"></i> Done</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+// ── END RE-EVAL SYSTEM ─────────────────────────────────────────────────
+// ── QUARTERLY STATS ───────────────────────────────────────────────────
+
+function getQuarterKey(date){
+  const d=date||new Date();
+  const q=Math.floor(d.getMonth()/3)+1;
+  return d.getFullYear()+'Q'+q;
+}
+function getQuarterLabel(key){
+  const y=key.substring(0,4);
+  const q=key.substring(5);
+  return 'Q'+q+' '+y;
+}
+function getPrevQuarterKey(){
+  const now=new Date();
+  const q=Math.floor(now.getMonth()/3);
+  if(q===0)return (now.getFullYear()-1)+'Q4';
+  return now.getFullYear()+'Q'+q;
+}
+
+function updateQuarterlyStats(){
+  const currentKey=getQuarterKey();
+  const prevKey=getPrevQuarterKey();
+  const currentLabel=getQuarterLabel(currentKey);
+  const prevLabel=getQuarterLabel(prevKey);
+
+  // Read inputs
+  const npTotal=parseInt(document.getElementById('np-total')?.value)||0;
+  const npConverted=Math.min(parseInt(document.getElementById('np-converted')?.value)||0,npTotal);
+  const cancelled=parseInt(document.getElementById('attr-cancelled')?.value)||0;
+  const quarterStartSubs=parseInt(document.getElementById('quarter-start-subs')?.value)||0;
+
+  // Save to Supabase (and localStorage as fast local cache)
+  const stored=JSON.parse(localStorage.getItem('sp_qstats')||'{}');
+  stored[currentKey]={npTotal,npConverted,cancelled,quarterStartSubs};
+  localStorage.setItem('sp_qstats',JSON.stringify(stored));
+  // Async save to Supabase so it syncs across devices
+  sb.from('settings').update({quarterly_stats:stored}).eq('id',1).then(({error})=>{
+    if(error)console.log('Quarterly stats save error:',error);
+  });
+
+  const prev=stored[prevKey]||null;
+
+  // ── Row 1 labels ──
+  const ql=document.getElementById('r1-quarter-label');
+  const ql2=document.getElementById('r1-quarter-label2');
+  if(ql)ql.textContent='· '+currentLabel;
+  if(ql2)ql2.textContent='· '+currentLabel;
+
+  // R1C2: NP display
+  const npDisp=document.getElementById('d-np-total-display');
+  const npSub=document.getElementById('d-np-signed-sub');
+  if(npDisp)npDisp.textContent=npTotal||'—';
+  if(npSub)npSub.textContent=npTotal?npConverted+' signed up ('+Math.round(npConverted/npTotal*100)+'%)':'enter numbers below';
+
+  // R1C3: Cancellations display
+  const canDisp=document.getElementById('d-cancelled-display');
+  const canSub=document.getElementById('d-cancelled-sub');
+  if(canDisp)canDisp.textContent=cancelled||'—';
+  if(canSub)canSub.textContent=cancelled?cancelled+' this quarter':'enter below';
+
+  // ── Row 2 labels ──
+  const r2ql=document.getElementById('r2-quarter-label');
+  const r2pl=document.getElementById('r2-prev-label');
+  if(r2ql)r2ql.textContent='· '+currentLabel;
+  if(r2pl)r2pl.textContent='· '+prevLabel;
+
+  // R2C2: Previous quarter NP conversion
+  const prevConvPct=prev&&prev.npTotal>0?Math.round(prev.npConverted/prev.npTotal*100):null;
+  const convEl=document.getElementById('d-conv');
+  const convSub=document.getElementById('d-conv-sub');
+  const convPrev=document.getElementById('d-conv-prev');
+  const convArc=document.getElementById('conv-arc');
+  const convLabel=document.getElementById('conv-pct-label');
+  const pct=prevConvPct!==null?prevConvPct:0;
+  if(convEl)convEl.textContent=prevConvPct!==null?prevConvPct+'%':'—';
+  if(convLabel)convLabel.textContent=pct+'%';
+  if(convSub)convSub.textContent=prev&&prev.npTotal?prev.npConverted+' of '+prev.npTotal+' NP on plan':'no data yet';
+  if(convArc)convArc.style.strokeDashoffset=125.7-(pct/100*125.7);
+
+  // Compare prev vs the quarter before that
+  const prevPrevDate=new Date();
+  prevPrevDate.setMonth(prevPrevDate.getMonth()-6);
+  const prevPrevKey=getQuarterKey(prevPrevDate);
+  const prevPrev=stored[prevPrevKey]||null;
+  const prevPrevPct=prevPrev&&prevPrev.npTotal>0?Math.round(prevPrev.npConverted/prevPrev.npTotal*100):null;
+  if(convPrev){
+    if(prevConvPct!==null&&prevPrevPct!==null){
+      const delta=prevConvPct-prevPrevPct;
+      const arrow=delta>0?'↑':delta<0?'↓':'→';
+      const col=delta>0?'#5a7a3a':delta<0?'#a0402a':'var(--text-hint)';
+      convPrev.innerHTML=`<span style="color:${col}">${arrow} ${Math.abs(delta)}% vs ${getQuarterLabel(prevPrevKey)}</span>`;
+    } else {
+      convPrev.textContent='';
+    }
+  }
+
+  // R2C3: Net growth = current subs - quarter start subs
+  const currentTotalSubs=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen).length;
+  const netGrowth=quarterStartSubs>0?currentTotalSubs-quarterStartSubs:null;
+  const ngEl=document.getElementById('d-net-growth');
+  const ngSub=document.getElementById('d-net-growth-sub');
+  if(ngEl){
+    if(netGrowth!==null){
+      const sign=netGrowth>0?'+':'';
+      const col=netGrowth>0?'#5a7a3a':netGrowth<0?'#a0402a':'var(--text-primary)';
+      ngEl.textContent=sign+netGrowth;
+      ngEl.style.color=col;
+    } else {
+      ngEl.textContent='—';
+      ngEl.style.color='var(--text-primary)';
+    }
+  }
+  if(ngSub)ngSub.textContent=quarterStartSubs>0?'started '+currentLabel+' with '+quarterStartSubs+' subs':'enter quarter-start count below';
+}
+
+async function loadQuarterlyStats(){
+  const currentKey=getQuarterKey();
+  let stored=JSON.parse(localStorage.getItem('sp_qstats')||'{}');
+
+  // Try to load from Supabase (source of truth across devices)
+  try{
+    const{data,error}=await sb.from('settings').select('quarterly_stats').eq('id',1).single();
+    if(!error&&data&&data.quarterly_stats&&Object.keys(data.quarterly_stats).length){
+      stored=data.quarterly_stats;
+      localStorage.setItem('sp_qstats',JSON.stringify(stored));
+    }
+  }catch(e){console.log('Quarterly stats load error:',e);}
+
+  const data=stored[currentKey]||{};
+  const ids={
+    'np-total':'npTotal',
+    'np-converted':'npConverted',
+    'attr-cancelled':'cancelled',
+    'quarter-start-subs':'quarterStartSubs'
+  };
+  Object.entries(ids).forEach(([elId,key])=>{
+    const el=document.getElementById(elId);
+    if(el&&data[key])el.value=data[key];
+  });
+  updateQuarterlyStats();
+}
+
+// Legacy stubs — keep these so any old references don't crash
+function updateConversion(){updateQuarterlyStats();}
+function loadConversionInputs(){loadQuarterlyStats();}
+function updateAttrition(){updateQuarterlyStats();}
+function loadAttritionInputs(){}
+
+// ── END QUARTERLY STATS ───────────────────────────────────────────────
+
+function showToast(msg){
+  const t=document.getElementById('toast');
+  const m=document.getElementById('toastMsg');
+  if(!t||!m)return;
+  m.textContent=msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3200);
+}
+
+function closeAllMenus(){document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));}
+function toggleMenu(id,e){e.stopPropagation();const m=document.getElementById('menu-'+id);const was=m.classList.contains('open');closeAllMenus();if(!was)m.classList.add('open');}
+document.addEventListener('click',closeAllMenus);
+function handleOverlay(e,id){if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('open');}
+
+
+// ── JANE CSV SYNC ─────────────────────────────────────────────────────
+
+let syncHistory=JSON.parse(localStorage.getItem('sp_syncHistory')||'[]');
+let pendingSync=null;
+
+function renderSyncHistory(){
+  const el=document.getElementById('syncHistory');
+  if(!syncHistory.length){el.innerHTML='<div class="empty-state" style="padding:16px"><i class="ti ti-history"></i>No syncs yet</div>';return;}
+  el.innerHTML=syncHistory.slice(0,10).map(h=>`
+    <div style="display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;border:0.5px solid var(--border);margin-bottom:6px;background:var(--surface)">
+      <i class="ti ti-circle-check" style="font-size:16px;color:var(--oak)"></i>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${h.date}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">${h.added} added · ${h.updated} updated · ${h.inactive} flagged inactive · ${h.total} total in file</div>
+      </div>
+    </div>`).join('');
+}
+
+function dzOver(e){e.preventDefault();document.getElementById('dropZone').classList.add('dragover');}
+function dzLeave(e){document.getElementById('dropZone').classList.remove('dragover');}
+function dzDrop(e){
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(file&&file.name.endsWith('.csv'))processCSV(file);
+  else showToast('Please drop a .csv file');
+}
+function handleFileSelect(input){
+  if(input.files[0])processCSV(input.files[0]);
+}
+
+function processCSV(file){
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      const text=e.target.result;
+      const rows=parseCSV(text);
+      if(!rows.length){showToast('CSV appears empty');return;}
+      const headers=rows[0].map(h=>h.trim().toLowerCase().replace(/\s+/g,'_'));
+
+      // Map Jane column names to what we need
+      const col=(name)=>{
+        const aliases={
+          first_name:['first_name','firstname','first name'],
+          last_name:['last_name','lastname','last name'],
+          preferred_name:['preferred_name','preferred name','preferred'],
+          mobile:['mobile_phone','mobile phone','mobile','cell','cell_phone'],
+          home_phone:['home_phone','home phone','home'],
+          email:['email','email_address'],
+          member_since:['member_since','member since'],
+          first_visit:['first_visit','first visit'],
+          last_visit:['last_visit','last visit'],
+          active:['active','status'],
+          guid:['patient_guid','guid','patient_id']
+        };
+        const list=aliases[name]||[name];
+        for(const a of list){const i=headers.indexOf(a);if(i>=0)return i;}
+        return -1;
+      };
+
+      // Parse each data row
+      const rawPatients=rows.slice(1).map(r=>{
+        const get=(name)=>{const i=col(name);return i>=0?(r[i]||'').trim():''};
+        const firstName=get('first_name');
+        const lastName=get('last_name');
+        if(!firstName&&!lastName)return null;
+        const preferred=get('preferred_name');
+        const displayName=(preferred||firstName)+' '+lastName;
+        const phone=get('mobile')||get('home_phone');
+        const email=get('email');
+        const memberSince=get('member_since');
+        const firstVisit=get('first_visit');
+        const lastVisit=get('last_visit');
+        const activeRaw=get('active').toLowerCase();
+        const isActive=activeRaw===''||activeRaw==='true'||activeRaw==='yes'||activeRaw==='active'||activeRaw==='1';
+        const guid=get('guid');
+        return{firstName,lastName,preferred,displayName,phone,email,memberSince,firstVisit,lastVisit,isActive,guid};
+      }).filter(Boolean);
+
+      // De-duplicate WITHIN the CSV itself (Jane sometimes exports a patient more than once)
+      const seenInFile=new Set();
+      const patients=rawPatients.filter(p=>{
+        const key=p.displayName.toLowerCase().replace(/\s+/g,'');
+        if(seenInFile.has(key))return false;
+        seenInFile.add(key);
+        return true;
+      });
+
+      // Refresh against the LIVE database, not just in-memory state,
+      // so two syncs in a row (even fast ones) never create duplicates.
+      showToast('Checking against existing patients…');
+      const[freshSubsR,freshPassesR]=await Promise.all([
+        sb.from('subscriptions').select('*'),
+        sb.from('punch_passes').select('*')
+      ]);
+      const freshSubs=(freshSubsR.data||[]).map(dbSubToApp);
+      const freshPasses=(freshPassesR.data||[]).map(dbPassToApp);
+
+      // Categorise each row
+      const newPts=[],updates=[],inactivePts=[],skipped=[];
+
+      patients.forEach(jp=>{
+        if(!jp.isActive){inactivePts.push(jp);return;}
+        const nameMatch=(n)=>(n||'').toLowerCase().replace(/\s+/g,'')===jp.displayName.toLowerCase().replace(/\s+/g,'');
+        const existingSub=freshSubs.find(s=>
+          nameMatch(s.primary)||nameMatch(s.groupName)||
+          (s.members||[]).some(m=>nameMatch(m))
+        );
+        const existingPass=freshPasses.find(p=>nameMatch(p.primary)||nameMatch(p.name)||(p.members||[]).some(m=>nameMatch(m)));
+        const exists=existingSub||existingPass;
+
+        if(!exists){
+          newPts.push(jp);
+        } else {
+          const currentPhone=existingSub?existingSub.phone:existingPass?existingPass.phone:'';
+          if(jp.phone&&jp.phone!==currentPhone){
+            updates.push({...jp,oldPhone:currentPhone,sub:existingSub,pass:existingPass});
+          } else {
+            skipped.push(jp);
+          }
+        }
+      });
+
+      pendingSync={newPts,updates,inactivePts,skipped,total:patients.length};
+      renderSyncPreview(pendingSync);
+    } catch(err){
+      showToast('Could not read CSV — make sure it is a Jane patient export');
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text){
+  const rows=[];
+  const lines=text.split(/\r?\n/);
+  for(const line of lines){
+    if(!line.trim())continue;
+    const row=[];let cur='';let inQ=false;
+    for(let i=0;i<line.length;i++){
+      const c=line[i];
+      if(c==='"'){inQ=!inQ;}
+      else if(c===','&&!inQ){row.push(cur);cur='';}
+      else if(c==='\t'&&!inQ){row.push(cur);cur='';}
+      else cur+=c;
+    }
+    row.push(cur);
+    rows.push(row);
+  }
+  return rows;
+}
+
+function renderSyncPreview(data){
+  document.getElementById('syncPreview').style.display='block';
+  document.getElementById('dropZoneCard').style.display='none';
+
+  document.getElementById('syncPreviewTitle').textContent=
+    `Ready to sync — ${data.total} patients in file`;
+
+  // Summary pills
+  document.getElementById('syncSummaryPills').innerHTML=`
+    <span class="sync-pill pill-new">${data.newPts.length} new</span>
+    <span class="sync-pill pill-update">${data.updates.length} phone updates</span>
+    <span class="sync-pill pill-inactive">${data.inactivePts.length} inactive in Jane</span>
+    <span class="sync-pill pill-skip">${data.skipped.length} no change</span>`;
+
+  // New patients tab
+  document.getElementById('sync-tab-new').innerHTML=data.newPts.length
+    ? data.newPts.map(p=>`
+      <div class="sync-row new">
+        <i class="ti ti-user-plus" style="font-size:15px;color:#3a3f28;flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">${p.phone||'no phone'}</div>
+        <span class="sync-pill pill-new">new</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-user-check"></i>No new patients</div>';
+
+  // Updates tab
+  document.getElementById('sync-tab-update').innerHTML=data.updates.length
+    ? data.updates.map(p=>`
+      <div class="sync-row update">
+        <i class="ti ti-edit" style="font-size:15px;color:#6b3f0e;flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">${p.oldPhone||'no old phone'} → ${p.phone}</div>
+        <span class="sync-pill pill-update">phone changed</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i>No updates needed</div>';
+
+  // Inactive tab
+  document.getElementById('sync-tab-inactive').innerHTML=data.inactivePts.length
+    ? `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px;padding:8px 12px;background:#f5ddd8;border-radius:7px">These patients are marked inactive in Jane. Review before removing from SpinePoint — they may still be on an active plan.</div>`
+      +data.inactivePts.map(p=>`
+      <div class="sync-row inactive">
+        <i class="ti ti-user-off" style="font-size:15px;color:#7a2e1e;flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">last visit: ${p.lastVisit||'—'}</div>
+        <span class="sync-pill pill-inactive">inactive in Jane</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i>No inactive patients</div>';
+
+  // Skipped tab
+  document.getElementById('sync-tab-skip').innerHTML=data.skipped.length
+    ? data.skipped.map(p=>`
+      <div class="sync-row skip">
+        <i class="ti ti-minus" style="font-size:15px;color:var(--text-hint);flex-shrink:0"></i>
+        <div class="sync-row-name">${p.displayName}</div>
+        <div class="sync-row-detail">${p.phone||'no phone'}</div>
+        <span class="sync-pill pill-skip">no change</span>
+      </div>`).join('')
+    : '<div class="empty-state" style="padding:20px"><i class="ti ti-check"></i>None</div>';
+
+  showSyncTab('new',document.getElementById('tab-new'));
+  updateSyncTabCounts(data);
+}
+
+function updateSyncTabCounts(data){
+  document.getElementById('tab-new').textContent=`New patients (${data.newPts.length})`;
+  document.getElementById('tab-update').textContent=`Updates (${data.updates.length})`;
+  document.getElementById('tab-inactive').textContent=`Inactive in Jane (${data.inactivePts.length})`;
+  document.getElementById('tab-skip').textContent=`No change (${data.skipped.length})`;
+}
+
+function showSyncTab(name,el){
+  document.querySelectorAll('.sync-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sync-tab-content').forEach(t=>t.style.display='none');
+  el.classList.add('active');
+  document.getElementById('sync-tab-'+name).style.display='block';
+}
+
+// Converts any date-ish string (e.g. "May 1, 2024", "5/1/2024", ISO, or empty) into
+// a YYYY-MM-DD string Postgres will accept, or null if it can't be parsed.
+function toSafeDate(val){
+  if(!val)return null;
+  const d=new Date(val);
+  if(isNaN(d.getTime()))return null;
+  return d.toISOString().split('T')[0];
+}
+
+async function confirmSync(){
+  if(!pendingSync)return;
+  const btn=document.getElementById('confirmSyncBtn');
+  if(btn&&btn.disabled)return; // prevent double-click double-insert
+  if(btn){btn.disabled=true;btn.textContent='Syncing…';}
+  const{newPts,updates}=pendingSync;
+
+  try{
+    // Bulk insert new patients as unassigned subscription placeholders
+    if(newPts.length){
+      const rows=newPts.map(p=>({
+        group_name:p.displayName,
+        plan_id:null,
+        fee:0,
+        primary_holder:p.displayName,
+        phone:p.phone,
+        members:[],
+        member_phones:[],
+        since:toSafeDate(p.memberSince||p.firstVisit),
+        active:true,
+        needs_plan:true
+      }));
+      const{data,error}=await sb.from('subscriptions').insert(rows).select();
+      if(error)throw error;
+      (data||[]).forEach(r=>subs.push(dbSubToApp(r)));
+    }
+
+    // Apply phone updates
+    for(const u of updates){
+      if(u.sub){
+        const{error}=await sb.from('subscriptions').update({phone:u.phone}).eq('id',u.sub.id);
+        if(error)throw error;
+        u.sub.phone=u.phone;
+      }
+      if(u.pass){
+        const{error}=await sb.from('punch_passes').update({phone:u.phone}).eq('id',u.pass.id);
+        if(error)throw error;
+        u.pass.phone=u.phone;
+      }
+    }
+
+    // Log sync (kept in localStorage — history only, not critical shared data)
+    const entry={
+      date:new Date().toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'}),
+      added:newPts.length,
+      updated:updates.length,
+      inactive:pendingSync.inactivePts.length,
+      total:pendingSync.total
+    };
+    syncHistory.unshift(entry);
+    localStorage.setItem('sp_syncHistory',JSON.stringify(syncHistory));
+
+    renderSyncHistory();
+    resetSync();
+    renderMemberships();
+    renderDashboard();
+
+    showToast(`Sync complete — ${newPts.length} added, ${updates.length} updated`);
+    if(newPts.length>0){
+      setTimeout(()=>showToast('New patients added without a plan — assign plans in Memberships'),3500);
+    }
+  }catch(err){
+    console.log('Sync error:',err);
+    showToast('Sync failed — check connection and try again');
+    if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Confirm sync';}
+  }
+}
+
+function resetSync(){
+  pendingSync=null;
+  document.getElementById('syncPreview').style.display='none';
+  document.getElementById('dropZoneCard').style.display='block';
+  document.getElementById('csvFileInput').value='';
+  const btn=document.getElementById('confirmSyncBtn');
+  if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-check"></i> Confirm sync';}
+}
+
+// ── END JANE CSV SYNC ─────────────────────────────────────────────────
+
+
+// ── GOOGLE SHEET QUEUE POLLING ────────────────────────────────────────
+let pollInterval=null;
+
+function startPolling(){
+  if(pollInterval)clearInterval(pollInterval);
+  if(!settings.appsScriptUrl) settings.appsScriptUrl='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
+  pollSheetQueue();
+  pollInterval=setInterval(pollSheetQueue,30000);
+}
+
+function pollSheetQueue(){
+  const APPS_URL='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8OWT90e__NB8EuO93-8ldy3-1rxB1-bL9Rf_vIDhTK1J_GQ/exec';
+  fetch(APPS_URL+'?action=getQueue',{method:'GET'})
+    .then(function(r){return r.json();})
+    .then(async function(data){
+      if(!data||!data.rows||!data.rows.length)return;
+      const todayStr=new Date().toDateString();
+      const existing=queue.map(function(q){return q.name.toLowerCase();});
+      let added=0;
+      for(const r of data.rows){
+        const name=(r.name||'').trim();
+        const visitCount=parseInt(r.visitCount)||1;
+        const rowDate=new Date(r.timestamp||'');
+        const isToday=!isNaN(rowDate)&&rowDate.toDateString()===todayStr;
+        if(name&&isToday&&!existing.includes(name.toLowerCase())){
+          try{
+            const{data:inserted,error}=await sb.from('queue').insert({
+              name:name,
+              time_label:rowDate.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+              status:'waiting',
+              visit_count:visitCount
+            }).select().single();
+            if(error)throw error;
+            queue.push(dbQueueToApp(inserted));
+            existing.push(name.toLowerCase());
+            trackVisitForPatient(name);
+            added++;
+          }catch(err){console.log('Queue insert error:',err);}
+        }
+      }
+      if(added>0){
+        renderKioskQueue();
+        renderDashboard();
+        showToast(added+' patient'+(added>1?'s':'')+' checked in via QR');
+      }
+    })
+    .catch(function(e){console.log('Poll error:',e.message);});
+}
+
+
+// ── INIT ──────────────────────────────────────────────────────────────
+window.onload=async function(){
+  showToast('Loading your data…');
+  await loadAllData();
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();loadQuarterlyStats();loadAttritionInputs();startPolling();
+  if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
+};
 </script>
 </body>
 </html>
