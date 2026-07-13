@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -77,7 +78,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .tier-bar-fill{height:100%;border-radius:2px}
 .menu-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--text-hint);padding:3px 5px;border-radius:5px;font-size:15px;line-height:1}
 .menu-btn:hover{background:var(--linen);color:var(--text-primary)}
-.dropdown{position:absolute;top:32px;right:0;background:var(--card);border:0.5px solid var(--border-strong);border-radius:8px;padding:4px 0;min-width:160px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.dropdown{position:absolute;top:32px;right:0;background:var(--card);border:0.5px solid var(--border-strong);border-radius:8px;padding:4px 0;min-width:160px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:min(320px,70vh);overflow-y:auto}
 .dropdown.open{display:block}
 .dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;color:var(--text-primary);cursor:pointer}
 .dropdown-item:hover{background:var(--linen)}
@@ -111,8 +112,8 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .sms-textarea:focus,.sms-select:focus,.field-input:focus{outline:none;border-color:var(--oak)}
 
 /* ── Subscription group cards ── */
-.sub-group{border:0.5px solid var(--border);border-radius:10px;background:var(--card);overflow:hidden;margin-bottom:10px}
-.sub-group-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface);border-bottom:0.5px solid var(--border)}
+.sub-group{border:0.5px solid var(--border);border-radius:10px;background:var(--card);overflow:visible;margin-bottom:10px}
+.sub-group-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface);border-bottom:0.5px solid var(--border);border-radius:10px 10px 0 0}
 .sub-group-left{display:flex;align-items:center;gap:10px}
 .sub-group-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0}
 .sub-group-name{font-size:14px;font-weight:500;color:var(--text-primary)}
@@ -171,6 +172,13 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
 #dropZone.dragover{background:var(--linen);border-color:var(--oak)}
 
 .inline-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* -- Drag-and-drop grouping (Active tab) -- */
+.sub-group[draggable="true"]{cursor:grab}
+.sub-group.dragging{opacity:.4}
+.sub-group.drag-over{border-color:var(--oak);box-shadow:0 0 0 2px rgba(98,104,76,.22);background:#f6f7f1}
+.drag-handle{cursor:grab;color:var(--text-hint);font-size:15px;margin-right:1px;flex-shrink:0;line-height:1}
+.drag-handle:active{cursor:grabbing}
 </style>
 </head>
 <body>
@@ -652,6 +660,19 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
       </div>
     </div>
 
+    <!-- MERGE MODAL (drag one patient/family onto another) -->
+    <div class="modal-overlay" id="mergeModal" onclick="handleOverlay(event,'mergeModal')">
+      <div class="modal-box">
+        <div class="modal-title">Merge into a family / group</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px" id="mergeModalNames"></div>
+        <label class="field-label">Group name</label><input type="text" class="field-input" id="mm-name" placeholder="e.g. Smith Family"/>
+        <label class="field-label">Plan</label><select class="field-input" id="mm-plan"></select>
+        <label class="field-label">Monthly fee ($) <span style="color:var(--text-hint);font-weight:400">— auto-fills from plan, edit if different</span></label>
+        <input type="number" class="field-input" id="mm-fee" min="0" placeholder="0"/>
+        <div class="modal-actions"><button class="btn-cancel" onclick="closeMergeModal()">Cancel</button><button class="btn-save" onclick="confirmMerge()">Merge</button></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1109,6 +1130,136 @@ async function moveFromFrozen(subId,destination){
   }catch(err){console.log('Move from frozen error:',err);showToast('Could not move patient');}
 }
 
+// ── DRAG-AND-DROP GROUPING (Active tab) ─────────────────────────────────
+let dragSourceId=null;
+let mergeSourceId=null,mergeTargetId=null;
+
+function dragStart(e,id){
+  dragSourceId=id;
+  e.dataTransfer.effectAllowed='move';
+  try{e.dataTransfer.setData('text/plain',String(id));}catch(err){}
+  e.currentTarget.classList.add('dragging');
+}
+function dragEnd(e){
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.sub-group.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  dragSourceId=null;
+}
+function dragOverGroup(e,id){
+  if(dragSourceId===null||dragSourceId===id)return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drag-over');
+}
+function dragLeaveGroup(e){
+  e.currentTarget.classList.remove('drag-over');
+}
+async function dropOnGroup(e,targetId){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const sourceId=dragSourceId;
+  dragSourceId=null;
+  if(!sourceId||sourceId===targetId)return;
+  const source=subs.find(x=>x.id===sourceId);
+  const target=subs.find(x=>x.id===targetId);
+  if(!source||!target)return;
+  const targetIsGroup=target.members&&target.members.length>0;
+  if(targetIsGroup){
+    await addToGroup(sourceId,targetId);
+  } else {
+    openMergeModal(sourceId,targetId);
+  }
+}
+
+function guessFamilyName(target,source){
+  const tLast=(target.primary||target.groupName||'').trim().split(' ').pop();
+  const sLast=(source.primary||source.groupName||'').trim().split(' ').pop();
+  if(tLast&&sLast&&tLast.toLowerCase()===sLast.toLowerCase())return tLast+' Family';
+  return target.groupName+' & '+source.groupName;
+}
+
+function openMergeModal(sourceId,targetId){
+  const source=subs.find(x=>x.id===sourceId);
+  const target=subs.find(x=>x.id===targetId);
+  if(!source||!target)return;
+  mergeSourceId=sourceId;mergeTargetId=targetId;
+  document.getElementById('mergeModalNames').textContent=target.groupName+' + '+source.groupName;
+  document.getElementById('mm-name').value=guessFamilyName(target,source);
+  const planSel=document.getElementById('mm-plan');
+  planSel.innerHTML=plans.length?plans.map(p=>`<option value="${p.id}">${p.name} — $${p.price}/mo</option>`).join(''):'<option value="">— add a plan first —</option>';
+  planSel.value=target.planId||source.planId||'';
+  planSel.onchange=function(){
+    const p=plans.find(x=>x.id===+this.value);
+    if(p)document.getElementById('mm-fee').value=p.price;
+  };
+  document.getElementById('mm-fee').value=target.fee||source.fee||'';
+  document.getElementById('mergeModal').classList.add('open');
+}
+function closeMergeModal(){
+  document.getElementById('mergeModal').classList.remove('open');
+  mergeSourceId=null;mergeTargetId=null;
+}
+async function confirmMerge(){
+  const source=subs.find(x=>x.id===mergeSourceId);
+  const target=subs.find(x=>x.id===mergeTargetId);
+  if(!source||!target)return;
+  const groupName=document.getElementById('mm-name').value.trim()||target.groupName;
+  const planId=parseInt(document.getElementById('mm-plan').value)||null;
+  const fee=parseFloat(document.getElementById('mm-fee').value)||0;
+  const mergedMembers=[...(target.members||[]),source.primary,...(source.members||[])].filter(Boolean);
+  const mergedPhones=[...(target.memberPhones||[])];
+  if(source.phone&&source.phone.trim())mergedPhones.push(source.phone.trim());
+  (source.memberPhones||[]).forEach(p=>{if(p&&p.trim())mergedPhones.push(p.trim());});
+  try{
+    const row={group_name:groupName,plan_id:planId,fee,members:mergedMembers,member_phones:mergedPhones};
+    const{data,error}=await sb.from('subscriptions').update(row).eq('id',target.id).select().single();
+    if(error)throw error;
+    Object.assign(target,dbSubToApp(data));
+    const{error:delErr}=await sb.from('subscriptions').delete().eq('id',source.id);
+    if(delErr)throw delErr;
+    subs=subs.filter(x=>x.id!==source.id);
+    closeMergeModal();
+    renderMemberships();renderDashboard();
+    showToast(groupName+' merged');
+  }catch(err){console.log('Merge error:',err);showToast('Could not merge subscriptions');}
+}
+async function addToGroup(sourceId,targetId){
+  const source=subs.find(x=>x.id===sourceId);
+  const target=subs.find(x=>x.id===targetId);
+  if(!source||!target)return;
+  const newMembers=[...(target.members||[]),source.primary,...(source.members||[])].filter(Boolean);
+  const newPhones=[...(target.memberPhones||[])];
+  if(source.phone&&source.phone.trim())newPhones.push(source.phone.trim());
+  (source.memberPhones||[]).forEach(p=>{if(p&&p.trim())newPhones.push(p.trim());});
+  try{
+    const{data,error}=await sb.from('subscriptions').update({members:newMembers,member_phones:newPhones}).eq('id',target.id).select().single();
+    if(error)throw error;
+    Object.assign(target,dbSubToApp(data));
+    const{error:delErr}=await sb.from('subscriptions').delete().eq('id',source.id);
+    if(delErr)throw delErr;
+    subs=subs.filter(x=>x.id!==source.id);
+    renderMemberships();renderDashboard();
+    showToast(source.groupName+' added to '+target.groupName);
+  }catch(err){console.log('Add to group error:',err);showToast('Could not add to group');}
+}
+async function ungroupSubscription(id){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===id);
+  if(!s||!s.members||!s.members.length){showToast('Nothing to ungroup');return;}
+  if(!confirm('Split "'+s.groupName+'" back into individual patients? Each member becomes their own unassigned entry.'))return;
+  try{
+    const inserts=s.members.map((m,i)=>({group_name:m,plan_id:null,fee:0,primary_holder:m,phone:(s.memberPhones||[])[i]||'',members:[],member_phones:[],since:s.since,active:true,needs_plan:true}));
+    const{data,error}=await sb.from('subscriptions').insert(inserts).select();
+    if(error)throw error;
+    (data||[]).forEach(r=>subs.push(dbSubToApp(r)));
+    const{error:err2}=await sb.from('subscriptions').update({members:[],member_phones:[]}).eq('id',id);
+    if(err2)throw err2;
+    s.members=[];s.memberPhones=[];
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' ungrouped');
+  }catch(err){console.log('Ungroup error:',err);showToast('Could not ungroup');}
+}
+
 function renderMemberships(){
   const assigned=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen);
   const unassigned=subs.filter(s=>s.active&&s.needsPlan&&!s.frozen);
@@ -1172,9 +1323,11 @@ function renderMemberships(){
       const initials=(s.primary||s.groupName).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
       const allMembers=[s.primary,...(s.members||[])].filter(Boolean);
-      return `<div class="sub-group">
+      const isGroup=s.members&&s.members.length>0;
+      return `<div class="sub-group" draggable="true" data-subid="${s.id}" ondragstart="dragStart(event,${s.id})" ondragend="dragEnd(event)" ondragover="dragOverGroup(event,${s.id})" ondragleave="dragLeaveGroup(event)" ondrop="dropOnGroup(event,${s.id})">
         <div class="sub-group-header">
           <div class="sub-group-left">
+            <span class="drag-handle" title="Drag onto another patient or family to merge">⠿</span>
             <div class="sub-group-icon" style="background:${bg};color:${tc}">${initials}</div>
             <div>
               <div class="sub-group-name">${s.groupName}</div>
@@ -1190,6 +1343,7 @@ function renderMemberships(){
               <button class="menu-btn" style="position:static" onclick="toggleMenu('sub-${s.id}',event)"><i class="ti ti-dots-vertical"></i></button>
               <div class="dropdown" id="menu-sub-${s.id}">
                 <div class="dropdown-item" onclick="openSubModal(${s.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit subscription</div>
+                ${isGroup?`<div class="dropdown-item" onclick="ungroupSubscription(${s.id})"><i class="ti ti-users-minus" style="font-size:14px"></i> Ungroup</div>`:''}
                 <div class="dropdown-divider"></div>
                 <div class="dropdown-item" onclick="freezeSubscription(${s.id})"><i class="ti ti-snowflake" style="font-size:14px"></i> Freeze plan</div>
                 <div class="dropdown-item" onclick="moveSubscription(${s.id},'punch')"><i class="ti ti-ticket" style="font-size:14px"></i> Move to Punch pass</div>
