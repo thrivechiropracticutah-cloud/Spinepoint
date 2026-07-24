@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -78,7 +77,7 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .tier-bar-fill{height:100%;border-radius:2px}
 .menu-btn{position:absolute;top:10px;right:10px;background:none;border:none;cursor:pointer;color:var(--text-hint);padding:3px 5px;border-radius:5px;font-size:15px;line-height:1}
 .menu-btn:hover{background:var(--linen);color:var(--text-primary)}
-.dropdown{position:absolute;top:32px;right:0;background:var(--card);border:0.5px solid var(--border-strong);border-radius:8px;padding:4px 0;min-width:160px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,.12);max-height:min(320px,70vh);overflow-y:auto}
+.dropdown{position:absolute;top:32px;right:0;background:var(--card);border:0.5px solid var(--border-strong);border-radius:8px;padding:4px 0;min-width:160px;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,.12)}
 .dropdown.open{display:block}
 .dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:13px;color:var(--text-primary);cursor:pointer}
 .dropdown-item:hover{background:var(--linen)}
@@ -112,8 +111,14 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .sms-textarea:focus,.sms-select:focus,.field-input:focus{outline:none;border-color:var(--oak)}
 
 /* ── Subscription group cards ── */
-.sub-group{border:0.5px solid var(--border);border-radius:10px;background:var(--card);overflow:visible;margin-bottom:10px}
-.sub-group-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface);border-bottom:0.5px solid var(--border);border-radius:10px 10px 0 0}
+.sub-group{border:0.5px solid var(--border);border-radius:10px;background:var(--card);overflow:hidden;margin-bottom:10px}
+.sub-group-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--surface);border-bottom:0.5px solid var(--border)}
+.drag-handle{cursor:grab;color:var(--text-hint);padding:4px 6px;font-size:16px;flex-shrink:0;touch-action:none}
+.drag-handle:active{cursor:grabbing}
+.sub-group.dragging{opacity:.4;border:1.5px dashed var(--border-strong)}
+.sub-group.drag-over{border:1.5px solid var(--oak);background:#f0f4ec;box-shadow:0 0 0 3px rgba(98,104,76,.15)}
+.sub-group.is-individual .drag-handle{display:flex}
+.sub-group.is-group .drag-handle{display:none}
 .sub-group-left{display:flex;align-items:center;gap:10px}
 .sub-group-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;flex-shrink:0}
 .sub-group-name{font-size:14px;font-weight:500;color:var(--text-primary)}
@@ -172,13 +177,6 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
 #dropZone.dragover{background:var(--linen);border-color:var(--oak)}
 
 .inline-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* -- Drag-and-drop grouping (Active tab) -- */
-.sub-group[draggable="true"]{cursor:grab}
-.sub-group.dragging{opacity:.4}
-.sub-group.drag-over{border-color:var(--oak);box-shadow:0 0 0 2px rgba(98,104,76,.22);background:#f6f7f1}
-.drag-handle{cursor:grab;color:var(--text-hint);font-size:15px;margin-right:1px;flex-shrink:0;line-height:1}
-.drag-handle:active{cursor:grabbing}
 </style>
 </head>
 <body>
@@ -491,7 +489,17 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
       <div class="jane-note"><i class="ti ti-plug" style="font-size:14px;flex-shrink:0;margin-top:1px"></i><span>Requires a Twilio account. Add your credentials in Settings. All automated alerts send from this same number.</span></div>
       <div class="two-col">
         <div class="card">
-          <div style="margin-bottom:13px"><label class="field-label">Send to</label><select id="smsTier" onchange="updateSmsCount()" class="sms-select"></select></div>
+          <div style="margin-bottom:13px">
+            <label class="field-label">Send to</label>
+            <div style="border:0.5px solid var(--border-strong);border-radius:8px;overflow:hidden">
+              <!-- Select all row -->
+              <label style="display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;background:var(--linen);border-bottom:0.5px solid var(--border)" onclick="toggleAllSmsAudience(event)">
+                <input type="checkbox" id="sms-check-all" style="width:15px;height:15px;accent-color:var(--oak);flex-shrink:0" onclick="event.stopPropagation();toggleAllSmsAudience(event)"/>
+                <span style="font-size:13px;font-weight:500;color:var(--text-primary)">Select all</span>
+              </label>
+              <div id="smsAudienceChecks"></div>
+            </div>
+          </div>
           <div style="margin-bottom:13px"><label class="field-label">Template</label>
             <select onchange="fillTemplate(this.value)" class="sms-select">
               <option value="">— choose a template —</option>
@@ -606,6 +614,36 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
       </div>
     </div>
 
+    <!-- MERGE MODAL -->
+    <div class="modal-overlay" id="mergeModal" onclick="handleOverlay(event,'mergeModal')">
+      <div class="modal-box">
+        <div class="modal-title">Group these patients together</div>
+        <input type="hidden" id="merge-source-id"/>
+        <input type="hidden" id="merge-target-id"/>
+        <div style="display:flex;gap:10px;margin-bottom:16px;padding:12px 14px;background:var(--linen);border-radius:9px;align-items:center">
+          <div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:3px">Merging</div>
+            <div style="font-size:13px;font-weight:500" id="merge-source-name">—</div>
+          </div>
+          <i class="ti ti-plus" style="font-size:16px;color:var(--text-hint);flex-shrink:0"></i>
+          <div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-bottom:3px">With</div>
+            <div style="font-size:13px;font-weight:500" id="merge-target-name">—</div>
+          </div>
+        </div>
+        <label class="field-label">Group / account name</label>
+        <input type="text" class="field-input" id="merge-group-name" placeholder="e.g. Cooper Couple, Smith Family"/>
+        <label class="field-label">Plan</label>
+        <select class="field-input" id="merge-plan"></select>
+        <label class="field-label">Monthly fee ($)</label>
+        <input type="number" class="field-input" id="merge-fee" min="0" placeholder="0"/>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="closeMergeModal()">Cancel</button>
+          <button class="btn-save" onclick="confirmMerge()">Group together</button>
+        </div>
+      </div>
+    </div>
+
     <!-- PLAN MODAL -->
     <div class="modal-overlay" id="planModal" onclick="handleOverlay(event,'planModal')">
       <div class="modal-box">
@@ -657,19 +695,6 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
         <label class="field-label">Visits remaining</label><input type="number" class="field-input" id="pass-visits" min="0" max="12" placeholder="12"/>
         <label class="field-label">Purchase date</label><input type="date" class="field-input" id="pass-date"/>
         <div class="modal-actions"><button class="btn-cancel" onclick="closePassModal()">Cancel</button><button class="btn-save" onclick="savePass()">Save pass</button></div>
-      </div>
-    </div>
-
-    <!-- MERGE MODAL (drag one patient/family onto another) -->
-    <div class="modal-overlay" id="mergeModal" onclick="handleOverlay(event,'mergeModal')">
-      <div class="modal-box">
-        <div class="modal-title">Merge into a family / group</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:16px" id="mergeModalNames"></div>
-        <label class="field-label">Group name</label><input type="text" class="field-input" id="mm-name" placeholder="e.g. Smith Family"/>
-        <label class="field-label">Plan</label><select class="field-input" id="mm-plan"></select>
-        <label class="field-label">Monthly fee ($) <span style="color:var(--text-hint);font-weight:400">— auto-fills from plan, edit if different</span></label>
-        <input type="number" class="field-input" id="mm-fee" min="0" placeholder="0"/>
-        <div class="modal-actions"><button class="btn-cancel" onclick="closeMergeModal()">Cancel</button><button class="btn-save" onclick="confirmMerge()">Merge</button></div>
       </div>
     </div>
 
@@ -1130,136 +1155,6 @@ async function moveFromFrozen(subId,destination){
   }catch(err){console.log('Move from frozen error:',err);showToast('Could not move patient');}
 }
 
-// ── DRAG-AND-DROP GROUPING (Active tab) ─────────────────────────────────
-let dragSourceId=null;
-let mergeSourceId=null,mergeTargetId=null;
-
-function dragStart(e,id){
-  dragSourceId=id;
-  e.dataTransfer.effectAllowed='move';
-  try{e.dataTransfer.setData('text/plain',String(id));}catch(err){}
-  e.currentTarget.classList.add('dragging');
-}
-function dragEnd(e){
-  e.currentTarget.classList.remove('dragging');
-  document.querySelectorAll('.sub-group.drag-over').forEach(el=>el.classList.remove('drag-over'));
-  dragSourceId=null;
-}
-function dragOverGroup(e,id){
-  if(dragSourceId===null||dragSourceId===id)return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect='move';
-  e.currentTarget.classList.add('drag-over');
-}
-function dragLeaveGroup(e){
-  e.currentTarget.classList.remove('drag-over');
-}
-async function dropOnGroup(e,targetId){
-  e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  const sourceId=dragSourceId;
-  dragSourceId=null;
-  if(!sourceId||sourceId===targetId)return;
-  const source=subs.find(x=>x.id===sourceId);
-  const target=subs.find(x=>x.id===targetId);
-  if(!source||!target)return;
-  const targetIsGroup=target.members&&target.members.length>0;
-  if(targetIsGroup){
-    await addToGroup(sourceId,targetId);
-  } else {
-    openMergeModal(sourceId,targetId);
-  }
-}
-
-function guessFamilyName(target,source){
-  const tLast=(target.primary||target.groupName||'').trim().split(' ').pop();
-  const sLast=(source.primary||source.groupName||'').trim().split(' ').pop();
-  if(tLast&&sLast&&tLast.toLowerCase()===sLast.toLowerCase())return tLast+' Family';
-  return target.groupName+' & '+source.groupName;
-}
-
-function openMergeModal(sourceId,targetId){
-  const source=subs.find(x=>x.id===sourceId);
-  const target=subs.find(x=>x.id===targetId);
-  if(!source||!target)return;
-  mergeSourceId=sourceId;mergeTargetId=targetId;
-  document.getElementById('mergeModalNames').textContent=target.groupName+' + '+source.groupName;
-  document.getElementById('mm-name').value=guessFamilyName(target,source);
-  const planSel=document.getElementById('mm-plan');
-  planSel.innerHTML=plans.length?plans.map(p=>`<option value="${p.id}">${p.name} — $${p.price}/mo</option>`).join(''):'<option value="">— add a plan first —</option>';
-  planSel.value=target.planId||source.planId||'';
-  planSel.onchange=function(){
-    const p=plans.find(x=>x.id===+this.value);
-    if(p)document.getElementById('mm-fee').value=p.price;
-  };
-  document.getElementById('mm-fee').value=target.fee||source.fee||'';
-  document.getElementById('mergeModal').classList.add('open');
-}
-function closeMergeModal(){
-  document.getElementById('mergeModal').classList.remove('open');
-  mergeSourceId=null;mergeTargetId=null;
-}
-async function confirmMerge(){
-  const source=subs.find(x=>x.id===mergeSourceId);
-  const target=subs.find(x=>x.id===mergeTargetId);
-  if(!source||!target)return;
-  const groupName=document.getElementById('mm-name').value.trim()||target.groupName;
-  const planId=parseInt(document.getElementById('mm-plan').value)||null;
-  const fee=parseFloat(document.getElementById('mm-fee').value)||0;
-  const mergedMembers=[...(target.members||[]),source.primary,...(source.members||[])].filter(Boolean);
-  const mergedPhones=[...(target.memberPhones||[])];
-  if(source.phone&&source.phone.trim())mergedPhones.push(source.phone.trim());
-  (source.memberPhones||[]).forEach(p=>{if(p&&p.trim())mergedPhones.push(p.trim());});
-  try{
-    const row={group_name:groupName,plan_id:planId,fee,members:mergedMembers,member_phones:mergedPhones};
-    const{data,error}=await sb.from('subscriptions').update(row).eq('id',target.id).select().single();
-    if(error)throw error;
-    Object.assign(target,dbSubToApp(data));
-    const{error:delErr}=await sb.from('subscriptions').delete().eq('id',source.id);
-    if(delErr)throw delErr;
-    subs=subs.filter(x=>x.id!==source.id);
-    closeMergeModal();
-    renderMemberships();renderDashboard();
-    showToast(groupName+' merged');
-  }catch(err){console.log('Merge error:',err);showToast('Could not merge subscriptions');}
-}
-async function addToGroup(sourceId,targetId){
-  const source=subs.find(x=>x.id===sourceId);
-  const target=subs.find(x=>x.id===targetId);
-  if(!source||!target)return;
-  const newMembers=[...(target.members||[]),source.primary,...(source.members||[])].filter(Boolean);
-  const newPhones=[...(target.memberPhones||[])];
-  if(source.phone&&source.phone.trim())newPhones.push(source.phone.trim());
-  (source.memberPhones||[]).forEach(p=>{if(p&&p.trim())newPhones.push(p.trim());});
-  try{
-    const{data,error}=await sb.from('subscriptions').update({members:newMembers,member_phones:newPhones}).eq('id',target.id).select().single();
-    if(error)throw error;
-    Object.assign(target,dbSubToApp(data));
-    const{error:delErr}=await sb.from('subscriptions').delete().eq('id',source.id);
-    if(delErr)throw delErr;
-    subs=subs.filter(x=>x.id!==source.id);
-    renderMemberships();renderDashboard();
-    showToast(source.groupName+' added to '+target.groupName);
-  }catch(err){console.log('Add to group error:',err);showToast('Could not add to group');}
-}
-async function ungroupSubscription(id){
-  closeAllMenus();
-  const s=subs.find(x=>x.id===id);
-  if(!s||!s.members||!s.members.length){showToast('Nothing to ungroup');return;}
-  if(!confirm('Split "'+s.groupName+'" back into individual patients? Each member becomes their own unassigned entry.'))return;
-  try{
-    const inserts=s.members.map((m,i)=>({group_name:m,plan_id:null,fee:0,primary_holder:m,phone:(s.memberPhones||[])[i]||'',members:[],member_phones:[],since:s.since,active:true,needs_plan:true}));
-    const{data,error}=await sb.from('subscriptions').insert(inserts).select();
-    if(error)throw error;
-    (data||[]).forEach(r=>subs.push(dbSubToApp(r)));
-    const{error:err2}=await sb.from('subscriptions').update({members:[],member_phones:[]}).eq('id',id);
-    if(err2)throw err2;
-    s.members=[];s.memberPhones=[];
-    renderMemberships();renderDashboard();
-    showToast(s.groupName+' ungrouped');
-  }catch(err){console.log('Ungroup error:',err);showToast('Could not ungroup');}
-}
-
 function renderMemberships(){
   const assigned=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen);
   const unassigned=subs.filter(s=>s.active&&s.needsPlan&&!s.frozen);
@@ -1324,10 +1219,16 @@ function renderMemberships(){
       const since=s.since?new Date(s.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):'—';
       const allMembers=[s.primary,...(s.members||[])].filter(Boolean);
       const isGroup=s.members&&s.members.length>0;
-      return `<div class="sub-group" draggable="true" data-subid="${s.id}" ondragstart="dragStart(event,${s.id})" ondragend="dragEnd(event)" ondragover="dragOverGroup(event,${s.id})" ondragleave="dragLeaveGroup(event)" ondrop="dropOnGroup(event,${s.id})">
+      return `<div class="sub-group ${isGroup?'is-group':'is-individual'}"
+        id="subcard-${s.id}"
+        draggable="${!isGroup}"
+        ondragstart="dragStart(event,${s.id})"
+        ondragover="dragOver(event,${s.id})"
+        ondragleave="dragLeave(event,${s.id})"
+        ondrop="dragDrop(event,${s.id})">
         <div class="sub-group-header">
           <div class="sub-group-left">
-            <span class="drag-handle" title="Drag onto another patient or family to merge">⠿</span>
+            ${!isGroup?`<div class="drag-handle" title="Drag to group with another patient"><i class="ti ti-grip-vertical"></i></div>`:''}
             <div class="sub-group-icon" style="background:${bg};color:${tc}">${initials}</div>
             <div>
               <div class="sub-group-name">${s.groupName}</div>
@@ -1343,7 +1244,7 @@ function renderMemberships(){
               <button class="menu-btn" style="position:static" onclick="toggleMenu('sub-${s.id}',event)"><i class="ti ti-dots-vertical"></i></button>
               <div class="dropdown" id="menu-sub-${s.id}">
                 <div class="dropdown-item" onclick="openSubModal(${s.id})"><i class="ti ti-edit" style="font-size:14px"></i> Edit subscription</div>
-                ${isGroup?`<div class="dropdown-item" onclick="ungroupSubscription(${s.id})"><i class="ti ti-users-minus" style="font-size:14px"></i> Ungroup</div>`:''}
+                ${isGroup?`<div class="dropdown-item" onclick="ungroupSubscription(${s.id})"><i class="ti ti-unlink" style="font-size:14px"></i> Ungroup</div>`:''}
                 <div class="dropdown-divider"></div>
                 <div class="dropdown-item" onclick="freezeSubscription(${s.id})"><i class="ti ti-snowflake" style="font-size:14px"></i> Freeze plan</div>
                 <div class="dropdown-item" onclick="moveSubscription(${s.id},'punch')"><i class="ti ti-ticket" style="font-size:14px"></i> Move to Punch pass</div>
@@ -1363,6 +1264,8 @@ function renderMemberships(){
         </div>
       </div>`;
     }).join('');
+    // Re-attach drag events after render
+    setupDragListeners();
   }
 
   // ── PUNCH PASSES TAB ──
@@ -1592,54 +1495,171 @@ function getAudiencePhones(v){
 }
 
 function buildSmsAudience(){
-  const allPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0)+passes.filter(p=>p.active).length;
-  const subPts=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0);
-  const passCount=passes.filter(p=>p.active).length;
-  let opts=`<option value="all">All active patients + punch passes (${allPts})</option>
-    <option value="sub">Subscribers only (${subPts})</option>
-    <option value="pass">Punch pass holders only (${passCount})</option>`;
-  plans.forEach(p=>{
-    const count=subs.filter(s=>s.active&&s.planId===p.id).reduce((a,s)=>a+1+(s.members||[]).length,0);
-    opts+=`<option value="plan-${p.id}">${p.name} plan (${count} patients)</option>`;
-  });
-  document.getElementById('smsTier').innerHTML=opts;
+  const container=document.getElementById('smsAudienceChecks');
+  if(!container)return;
+
+  // Build audience options
+  const audiences=[];
+
+  // Active subscribers
+  const activeSubs=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen);
+  const allSubPhones=getAudiencePhones('sub');
+  if(activeSubs.length){
+    audiences.push({id:'sub',label:'All active subscribers',count:allSubPhones.length});
+    // Break down by plan only if plans exist
+    if(plans.length){
+      plans.forEach(p=>{
+        const planSubs=activeSubs.filter(s=>s.planId===p.id);
+        if(planSubs.length){
+          const planPhones=getAudiencePhones('plan-'+p.id);
+          audiences.push({id:'plan-'+p.id,label:p.name+' plan',count:planPhones.length,indent:true});
+        }
+      });
+      const noPlan=activeSubs.filter(s=>!s.planId);
+      if(noPlan.length){
+        const noPlanPhones=noPlan.map(s=>[s.phone,...(s.memberPhones||[])]).flat().filter(p=>p&&p.trim());
+        audiences.push({id:'plan-none',label:'No plan assigned',count:new Set(noPlanPhones).size,indent:true});
+      }
+    }
+  }
+
+  // Punch passes
+  const activePasses=passes.filter(p=>p.active);
+  if(activePasses.length){
+    const passPhones=getAudiencePhones('pass');
+    audiences.push({id:'pass',label:'Punch pass holders',count:passPhones.length});
+  }
+
+  // Frozen
+  const frozenSubs=subs.filter(s=>s.frozen);
+  if(frozenSubs.length){
+    const frozenPhones=frozenSubs.map(s=>[s.phone,...(s.memberPhones||[])]).flat().filter(p=>p&&p.trim());
+    audiences.push({id:'frozen',label:'Frozen plans',count:new Set(frozenPhones).size});
+  }
+
+  // Inactive
+  const inactiveSubs=subs.filter(s=>!s.active&&!s.frozen);
+  if(inactiveSubs.length){
+    const inactivePhones=inactiveSubs.map(s=>[s.phone,...(s.memberPhones||[])]).flat().filter(p=>p&&p.trim());
+    audiences.push({id:'inactive',label:'Inactive patients',count:new Set(inactivePhones).size});
+  }
+
+  if(!audiences.length){
+    container.innerHTML='<div style="padding:12px;font-size:12px;color:var(--text-secondary);text-align:center">No patients found — add patients in Memberships first</div>';
+    updateSmsCount();
+    return;
+  }
+  container.innerHTML=audiences.map(a=>`
+    <label style="display:flex;align-items:center;gap:10px;padding:8px 12px ${a.indent?'8px 28px':''};cursor:pointer;border-bottom:0.5px solid var(--border);transition:.1s" onmouseover="this.style.background='var(--linen)'" onmouseout="this.style.background=''">
+      <input type="checkbox" class="sms-audience-check" data-id="${a.id}" style="width:15px;height:15px;accent-color:var(--oak);flex-shrink:0" onchange="updateSmsCount()"/>
+      <span style="font-size:13px;color:var(--text-primary);flex:1${a.indent?';padding-left:8px':''}">${a.label}</span>
+      <span style="font-size:11px;color:var(--text-hint);background:var(--linen);padding:2px 7px;border-radius:10px">${a.count}</span>
+    </label>`).join('');
+
   updateSmsCount();
 }
-function updateSmsCount(){
-  const v=document.getElementById('smsTier').value;
-  let count=0;
-  if(v==='all')count=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0)+passes.filter(p=>p.active).length;
-  else if(v==='sub')count=subs.filter(s=>s.active).reduce((a,s)=>a+1+(s.members||[]).length,0);
-  else if(v==='pass')count=passes.filter(p=>p.active).length;
-  else if(v.startsWith('plan-')){const pid=parseInt(v.replace('plan-',''));count=subs.filter(s=>s.active&&s.planId===pid).reduce((a,s)=>a+1+(s.members||[]).length,0);}
-  document.getElementById('recipientLine').textContent='Sending to '+count+' patient'+(count!==1?'s':'');
+
+function toggleAllSmsAudience(event){
+  const allCheck=document.getElementById('sms-check-all');
+  const checks=document.querySelectorAll('.sms-audience-check');
+  // If clicking the label (not the checkbox itself), toggle the checkbox first
+  const newState=allCheck.checked;
+  checks.forEach(c=>c.checked=newState);
+  updateSmsCount();
 }
+
+function updateSmsCount(){
+  const allCheck=document.getElementById('sms-check-all');
+  const checks=[...document.querySelectorAll('.sms-audience-check')];
+  const checked=checks.filter(c=>c.checked);
+
+  // Update select-all state
+  if(allCheck){
+    allCheck.checked=checked.length===checks.length&&checks.length>0;
+    allCheck.indeterminate=checked.length>0&&checked.length<checks.length;
+  }
+
+  // Collect unique phones from all checked audiences
+  const allPhones=new Set();
+  checked.forEach(c=>{
+    const id=c.dataset.id;
+    if(id==='frozen'){
+      subs.filter(s=>s.frozen).forEach(s=>{
+        if(s.phone)allPhones.add(s.phone.trim());
+        (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())allPhones.add(p.trim());});
+      });
+    } else if(id==='inactive'){
+      subs.filter(s=>!s.active&&!s.frozen).forEach(s=>{
+        if(s.phone)allPhones.add(s.phone.trim());
+        (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())allPhones.add(p.trim());});
+      });
+    } else if(id==='plan-none'){
+      subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen&&!s.planId).forEach(s=>{
+        if(s.phone)allPhones.add(s.phone.trim());
+        (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())allPhones.add(p.trim());});
+      });
+    } else {
+      getAudiencePhones(id).forEach(p=>allPhones.add(p));
+    }
+  });
+
+  const count=allPhones.size;
+  const line=document.getElementById('recipientLine');
+  if(line)line.textContent=count>0?'Sending to '+count+' patient'+(count!==1?'s':''):'Select recipients above';
+}
+
+function getCheckedPhones(){
+  const checks=[...document.querySelectorAll('.sms-audience-check')].filter(c=>c.checked);
+  const allPhones=new Set();
+  checks.forEach(c=>{
+    const id=c.dataset.id;
+    if(id==='frozen'){
+      subs.filter(s=>s.frozen).forEach(s=>{
+        if(s.phone)allPhones.add(s.phone.trim());
+        (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())allPhones.add(p.trim());});
+      });
+    } else if(id==='inactive'){
+      subs.filter(s=>!s.active&&!s.frozen).forEach(s=>{
+        if(s.phone)allPhones.add(s.phone.trim());
+        (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())allPhones.add(p.trim());});
+      });
+    } else if(id==='plan-none'){
+      subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen&&!s.planId).forEach(s=>{
+        if(s.phone)allPhones.add(s.phone.trim());
+        (s.memberPhones||[]).forEach(p=>{if(p&&p.trim())allPhones.add(p.trim());});
+      });
+    } else {
+      getAudiencePhones(id).forEach(p=>allPhones.add(p));
+    }
+  });
+  return Array.from(allPhones);
+}
+
+function getCheckedLabels(){
+  return [...document.querySelectorAll('.sms-audience-check')]
+    .filter(c=>c.checked)
+    .map(c=>c.closest('label').querySelector('span:first-of-type').textContent.trim())
+    .join(', ');
+}
+
 function updateChar(ta){document.getElementById('charCount').textContent='('+ta.value.length+'/160)';document.getElementById('previewBubble').textContent=ta.value||'Your message will appear here.';}
 function fillTemplate(v){
   const name=settings.practiceName||'Your Practice';
   const phone=settings.phone||'your clinic number';
-  const t={closure:`Hi {name}, ${name} will be CLOSED [DATE]. We apologize for the inconvenience. Please call ${phone} to reschedule. Thank you!`,holiday:`Hi {name}, holiday hours this week: [HOURS]. Closed [DAYS]. — ${name}`,reminder:`Hi {name}, reminder: you have an appointment tomorrow at ${name}. Reply CONFIRM or call ${phone} to reschedule.`,pass_low:`Hi {name}, your ${name} punch pass has 2 visits remaining. Call us to renew. We appreciate you!`,custom:''};
+  const t={closure:`Hi, ${name} will be CLOSED [DATE]. We apologize for the inconvenience. Please call ${phone} to reschedule. Thank you!`,holiday:`Hi, holiday hours this week: [HOURS]. Closed [DAYS]. — ${name}`,reminder:`Hi, reminder: you have an appointment tomorrow at ${name}. Reply CONFIRM or call ${phone} to reschedule.`,pass_low:`Hi, your ${name} punch pass has 2 visits remaining. Call us to renew. We appreciate you!`,custom:''};
   if(!v)return;
   document.getElementById('smsBody').value=t[v]||'';
   updateChar(document.getElementById('smsBody'));
 }
+
 let shArr=[];
 function sendSMS(){
   const msg=document.getElementById('smsBody').value.trim();
   if(!msg){showToast('Please write a message first');return;}
-  const tier=document.getElementById('smsTier');
-  const audienceVal=tier.value;
-  const audienceLabel=tier.options[tier.selectedIndex].text;
-  const phones=getAudiencePhones(audienceVal);
-
-  if(!phones.length){
-    showToast('No phone numbers found for this audience');
-    return;
-  }
-  if(!settings.appsScriptUrl){
-    showToast('Add your Apps Script URL in Settings first');
-    return;
-  }
+  const phones=getCheckedPhones();
+  const label=getCheckedLabels()||'Selected patients';
+  if(!phones.length){showToast('Select at least one recipient group above');return;}
+  if(!settings.appsScriptUrl){showToast('Add your Apps Script URL in Settings first');return;}
 
   const btn=document.getElementById('sendSmsBtn');
   if(btn){btn.disabled=true;btn.textContent='Sending…';}
@@ -1650,31 +1670,22 @@ function sendSMS(){
     +'&body='+encodeURIComponent(msg);
 
   fetch(url,{method:'GET'})
-    .then(function(r){return r.json();})
-    .then(function(data){
+    .then(r=>r.json())
+    .then(data=>{
       if(data&&data.success){
-        shArr.unshift({
-          msg,
-          label:audienceLabel+' — '+data.sent+' sent'+(data.failed?', '+data.failed+' failed':''),
-          time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})
-        });
+        shArr.unshift({msg,label:label+' — '+data.sent+' sent'+(data.failed?', '+data.failed+' failed':''),time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})});
         renderSendHistory();
         showToast(data.sent+' message'+(data.sent!==1?'s':'')+' sent'+(data.failed?', '+data.failed+' failed':''));
       } else {
         showToast('Send failed: '+(data&&data.error?data.error:'unknown error'));
       }
     })
-    .catch(function(e){
-      showToast('Could not reach Twilio relay — check Apps Script URL');
-      console.log('SMS send error:',e);
-    })
-    .finally(function(){
-      if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Send SMS';}
-    });
+    .catch(e=>{showToast('Could not reach Twilio relay — check Apps Script URL');console.log('SMS send error:',e);})
+    .finally(()=>{if(btn){btn.disabled=false;btn.innerHTML='<i class="ti ti-send"></i> Send SMS';}});
 }
 
 function renderSendHistory(){
-  document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
+  document.getElementById('sendHistory').innerHTML=shArr.slice(0,5).map(h=>`<div style="padding:9px 11px;background:var(--linen);border-radius:7px;font-size:12px;margin-bottom:6px"><div style="font-weight:500;color:var(--text-primary);margin-bottom:2px">${h.label} · ${h.time}</div><div style="color:var(--text-secondary)">${h.msg.slice(0,70)}${h.msg.length>70?'…':''}</div></div>`).join('');
 }
 
 // ── DROPDOWNS ─────────────────────────────────────────────────────────
@@ -1972,6 +1983,189 @@ function showToast(msg){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),3200);
 }
+
+// ── DRAG & DROP GROUPING ──────────────────────────────────────────────
+let dragSourceId=null;
+
+function setupDragListeners(){
+  // Nothing needed — events are inline on each card
+}
+
+function dragStart(event,subId){
+  dragSourceId=subId;
+  event.dataTransfer.effectAllowed='move';
+  const el=document.getElementById('subcard-'+subId);
+  if(el)setTimeout(()=>el.classList.add('dragging'),0);
+}
+
+function dragOver(event,targetId){
+  if(dragSourceId===null||dragSourceId===targetId)return;
+  event.preventDefault();
+  event.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.sub-group.drag-over').forEach(el=>el.classList.remove('drag-over'));
+  const el=document.getElementById('subcard-'+targetId);
+  if(el)el.classList.add('drag-over');
+}
+
+function dragLeave(event,targetId){
+  const el=document.getElementById('subcard-'+targetId);
+  if(el)el.classList.remove('drag-over');
+}
+
+function dragDrop(event,targetId){
+  event.preventDefault();
+  document.querySelectorAll('.sub-group.drag-over,.sub-group.dragging').forEach(el=>{
+    el.classList.remove('drag-over','dragging');
+  });
+  if(dragSourceId===null||dragSourceId===targetId){dragSourceId=null;return;}
+
+  const source=subs.find(s=>s.id===dragSourceId);
+  const target=subs.find(s=>s.id===targetId);
+  dragSourceId=null;
+  if(!source||!target)return;
+
+  const targetIsGroup=target.members&&target.members.length>0;
+
+  if(targetIsGroup){
+    // Add source directly into existing group
+    addToGroup(source,target);
+  } else {
+    // Both are individuals — open merge dialog
+    openMergeModal(source,target);
+  }
+}
+
+function openMergeModal(source,target){
+  document.getElementById('merge-source-id').value=source.id;
+  document.getElementById('merge-target-id').value=target.id;
+  document.getElementById('merge-source-name').textContent=source.groupName+(source.phone?' · '+source.phone:'');
+  document.getElementById('merge-target-name').textContent=target.groupName+(target.phone?' · '+target.phone:'');
+  // Suggest a group name
+  const lastName=source.groupName.split(' ').pop();
+  document.getElementById('merge-group-name').value=lastName+' Group';
+  // Populate plan selector
+  const planSel=document.getElementById('merge-plan');
+  planSel.innerHTML=`<option value="">— assign a plan —</option>`+
+    plans.map(p=>`<option value="${p.id}">${p.name} — $${p.price}/mo</option>`).join('');
+  planSel.onchange=function(){
+    const p=plans.find(x=>x.id===+this.value);
+    if(p)document.getElementById('merge-fee').value=p.price;
+  };
+  document.getElementById('merge-fee').value='';
+  document.getElementById('mergeModal').classList.add('open');
+}
+
+function closeMergeModal(){
+  document.getElementById('mergeModal').classList.remove('open');
+}
+
+async function confirmMerge(){
+  const sourceId=+document.getElementById('merge-source-id').value;
+  const targetId=+document.getElementById('merge-target-id').value;
+  const groupName=document.getElementById('merge-group-name').value.trim();
+  const planId=parseInt(document.getElementById('merge-plan').value)||null;
+  const fee=parseFloat(document.getElementById('merge-fee').value)||0;
+  if(!groupName){showToast('Please enter a group name');return;}
+
+  const source=subs.find(s=>s.id===sourceId);
+  const target=subs.find(s=>s.id===targetId);
+  if(!source||!target)return;
+
+  // Build merged subscription — target becomes the primary holder, source becomes a member
+  const mergedRow={
+    group_name:groupName,
+    plan_id:planId,
+    fee,
+    primary_holder:target.primary||target.groupName,
+    phone:target.phone,
+    members:[source.primary||source.groupName],
+    member_phones:[source.phone||''],
+    since:target.since||source.since||null,
+    active:true,
+    needs_plan:false,
+    frozen:false
+  };
+
+  try{
+    // Create the merged subscription
+    const{data,error}=await sb.from('subscriptions').insert(mergedRow).select().single();
+    if(error)throw error;
+    // Delete the two originals
+    await sb.from('subscriptions').delete().in('id',[sourceId,targetId]);
+    subs=subs.filter(s=>s.id!==sourceId&&s.id!==targetId);
+    subs.push(dbSubToApp(data));
+    closeMergeModal();
+    renderMemberships();renderDashboard();
+    showToast(groupName+' group created');
+  }catch(err){
+    console.log('Merge error:',err);
+    showToast('Could not merge — try again');
+  }
+}
+
+async function addToGroup(source,target){
+  // Add source as a new member of the target group
+  const newMembers=[...(target.members||[]),source.primary||source.groupName];
+  const newMemberPhones=[...(target.memberPhones||[]),source.phone||''];
+  try{
+    const{data,error}=await sb.from('subscriptions')
+      .update({members:newMembers,member_phones:newMemberPhones})
+      .eq('id',target.id).select().single();
+    if(error)throw error;
+    // Delete the source individual
+    await sb.from('subscriptions').delete().eq('id',source.id);
+    subs=subs.filter(s=>s.id!==source.id);
+    Object.assign(target,dbSubToApp(data));
+    renderMemberships();renderDashboard();
+    showToast(source.groupName+' added to '+target.groupName);
+  }catch(err){
+    console.log('Add to group error:',err);
+    showToast('Could not add to group — try again');
+  }
+}
+
+async function ungroupSubscription(subId){
+  closeAllMenus();
+  const s=subs.find(x=>x.id===subId);
+  if(!s)return;
+  if(!confirm('Ungroup "'+s.groupName+'"? All members will be returned to the Patients tab to re-sort.'))return;
+
+  // Build individual subs for each member
+  const individuals=[
+    {name:s.primary||s.groupName,phone:s.phone||''},
+    ...(s.members||[]).map((m,i)=>({name:m,phone:(s.memberPhones||[])[i]||''}))
+  ].filter(x=>x.name);
+
+  try{
+    // Delete the group
+    await sb.from('subscriptions').delete().eq('id',subId);
+    subs=subs.filter(x=>x.id!==subId);
+    // Re-create each as an individual needing a plan
+    if(individuals.length){
+      const rows=individuals.map(ind=>({
+        group_name:ind.name,
+        plan_id:null,
+        fee:0,
+        primary_holder:ind.name,
+        phone:ind.phone,
+        members:[],
+        member_phones:[],
+        since:s.since||null,
+        active:true,
+        needs_plan:true
+      }));
+      const{data,error}=await sb.from('subscriptions').insert(rows).select();
+      if(error)throw error;
+      (data||[]).forEach(r=>subs.push(dbSubToApp(r)));
+    }
+    renderMemberships();renderDashboard();
+    showToast(s.groupName+' ungrouped — members moved to Patients tab');
+  }catch(err){
+    console.log('Ungroup error:',err);
+    showToast('Could not ungroup — try again');
+  }
+}
+// ── END DRAG & DROP ───────────────────────────────────────────────────
 
 function closeAllMenus(){document.querySelectorAll('.dropdown.open').forEach(d=>d.classList.remove('open'));}
 function toggleMenu(id,e){e.stopPropagation();const m=document.getElementById('menu-'+id);const was=m.classList.contains('open');closeAllMenus();if(!was)m.classList.add('open');}
