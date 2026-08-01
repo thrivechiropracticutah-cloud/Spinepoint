@@ -1156,10 +1156,10 @@ async function moveFromFrozen(subId,destination){
 }
 
 function renderMemberships(){
-  const assigned=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen);
-  const unassigned=subs.filter(s=>s.active&&s.needsPlan&&!s.frozen);
-  const inactiveSubs=subs.filter(s=>!s.active&&!s.frozen);
-  const frozenSubs=subs.filter(s=>s.frozen);
+  const assigned=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen).sort((a,b)=>a.groupName.localeCompare(b.groupName));
+  const unassigned=subs.filter(s=>s.active&&s.needsPlan&&!s.frozen).sort((a,b)=>a.groupName.localeCompare(b.groupName));
+  const inactiveSubs=subs.filter(s=>!s.active&&!s.frozen).sort((a,b)=>a.groupName.localeCompare(b.groupName));
+  const frozenSubs=subs.filter(s=>s.frozen).sort((a,b)=>a.groupName.localeCompare(b.groupName));
   const totalSubs=assigned.length;
   const totalPts=assigned.reduce((a,s)=>a+1+(s.members||[]).length,0);
   const totalMRR=assigned.reduce((a,s)=>a+s.fee,0);
@@ -1270,7 +1270,7 @@ function renderMemberships(){
 
   // ── PUNCH PASSES TAB ──
   const pl=document.getElementById('passHolderList');
-  const activePasses=passes.filter(p=>p.active);
+  const activePasses=passes.filter(p=>p.active).sort((a,b)=>(a.name||a.primary||"").localeCompare(b.name||b.primary||""));
   if(!activePasses.length){
     pl.innerHTML='<div class="empty-state"><i class="ti ti-ticket"></i>No punch pass holders yet</div>';
   } else {
@@ -1389,7 +1389,7 @@ function renderMemberships(){
 // ── RENDER DASHBOARD ──────────────────────────────────────────────────
 function renderDashboard(){
   updateLabels();
-  const activeSubs=subs.filter(s=>s.active);
+  const activeSubs=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen);
   const totalSubs=activeSubs.length;
   const totalPts=activeSubs.reduce((a,s)=>a+1+(s.members||[]).length,0);
   const totalMRR=activeSubs.reduce((a,s)=>a+s.fee,0);
@@ -1524,7 +1524,7 @@ function buildSmsAudience(){
   }
 
   // Punch passes
-  const activePasses=passes.filter(p=>p.active);
+  const activePasses=passes.filter(p=>p.active).sort((a,b)=>(a.name||a.primary||"").localeCompare(b.name||b.primary||""));
   if(activePasses.length){
     const passPhones=getAudiencePhones('pass');
     audiences.push({id:'pass',label:'Punch pass holders',count:passPhones.length});
