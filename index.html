@@ -1953,7 +1953,7 @@ async function loadQuarterlyStats(){
     }
   }catch(e){console.log('Quarterly stats load error:',e);}
 
-  const data=stored[currentKey]||{};
+  const currentData=stored[currentKey]||{};
   const ids={
     'np-total':'npTotal',
     'np-converted':'npConverted',
@@ -1962,7 +1962,7 @@ async function loadQuarterlyStats(){
   };
   Object.entries(ids).forEach(([elId,key])=>{
     const el=document.getElementById(elId);
-    if(el&&data[key])el.value=data[key];
+    if(el&&currentData[key]!==undefined&&currentData[key]!==null)el.value=currentData[key];
   });
   updateQuarterlyStats();
 }
@@ -2567,7 +2567,7 @@ function pollSheetQueue(){
 window.onload=async function(){
   showToast('Loading your data…');
   await loadAllData();
-  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();loadQuarterlyStats();loadAttritionInputs();startPolling();
+  updateLabels();renderDashboard();refreshQR();renderSyncHistory();renderAlerts();await loadQuarterlyStats();loadAttritionInputs();startPolling();
   if(!settings.practiceName)setTimeout(()=>showToast('Welcome! Start in Settings to configure your practice'),800);
 };
 </script>
