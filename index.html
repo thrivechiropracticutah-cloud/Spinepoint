@@ -1424,19 +1424,46 @@ function renderQueueItems(el,list){
     const sub=subs.find(s=>[s.primary,...(s.members||[])].some(m=>m&&m.toLowerCase()===q.name.toLowerCase()));
     const plan=sub?plans.find(p=>p.id===sub.planId):null;
     const ci=plan?plans.indexOf(plan):5;
-    return `<div class="queue-item">
+    const isDone=q.status==='done';
+    return `<div class="queue-item" style="${isDone?'opacity:0.5;background:#f0f4eb':''}">
       <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${(q.name||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
-      <div class="q-info"><div class="q-name">${q.name}</div><div class="q-detail">${plan?plan.name:'Walk-in'} · ${q.time}${q.visitCount?' · visit #'+q.visitCount+' this month':''}</div></div>
-      <div class="q-status"><div class="dot ${q.status==='in'?'dot-in':q.status==='ready'?'dot-ready':'dot-wait'}"></div>${q.status==='in'?'In session':q.status==='ready'?'Ready':'Waiting'}</div>
+      <div class="q-info" style="flex:1">
+        <div class="q-name" style="${isDone?'text-decoration:line-through;color:var(--text-secondary)':''}">${q.name}</div>
+        <div class="q-detail">${plan?plan.name:'Walk-in'} · ${q.time}${q.visitCount?' · visit #'+q.visitCount+' this month':''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        ${!isDone?`<button class="sm-btn" style="font-size:11px;background:#e8ece0;border-color:#c4c9b0;color:#3a3f28" onclick="markDone(${q.id})"><i class="ti ti-check" style="font-size:12px"></i> Done</button>`:'<span style="font-size:11px;color:var(--text-hint)">✓ Done</span>'}
+      </div>
     </div>`;
   }).join('');
 }
+
+async function markDone(queueId){
+  try{
+    const{error}=await sb.from('queue').update({status:'done'}).eq('id',queueId);
+    if(error)throw error;
+    const q=queue.find(x=>x.id===queueId);
+    if(q)q.status='done';
+    renderKioskQueue();
+    renderDashboard();
+  }catch(err){
+    console.log('Mark done error:',err);
+    showToast('Could not update — try again');
+  }
+}
+
 function renderKioskQueue(){
-  const waiting=queue.filter(q=>q.status!=='in');
-  document.getElementById('queueBadge').textContent=waiting.length+' waiting';
+  const active=queue.filter(q=>q.status!=='done'&&q.status!=='in');
+  const done=queue.filter(q=>q.status==='done');
+  document.getElementById('queueBadge').textContent=active.length+' waiting';
   const el=document.getElementById('kioskQueue');
-  if(!waiting.length){el.innerHTML='<div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div>';}
-  else renderQueueItems(el,waiting);
+  if(!queue.length){
+    el.innerHTML='<div class="empty-state"><i class="ti ti-clock"></i>Queue is empty</div>';
+    return;
+  }
+  // Show waiting first, then done at bottom dimmed
+  const combined=[...active,...done];
+  renderQueueItems(el,combined);
 }
 async function kioskCheckIn(){
   const name=document.getElementById('kioskName').value.trim();
