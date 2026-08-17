@@ -319,15 +319,8 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
       <div class="page-title">Alerts &amp; reminders</div>
       <div class="page-sub">Things that need your attention today</div>
       <div class="card" style="margin-bottom:12px">
-        <div class="card-header">
-          <div class="card-title">Re-eval threshold</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:12px;color:var(--text-secondary)">Alert every</span>
-            <input type="number" id="reeval-threshold" value="15" min="1" max="100" style="width:52px;border:0.5px solid var(--border-strong);border-radius:6px;padding:4px 6px;font-size:13px;text-align:center;background:var(--surface);color:var(--text-primary)" onchange="saveReevalThreshold(this.value)"/>
-            <span style="font-size:12px;color:var(--text-secondary)">visits</span>
-          </div>
-        </div>
-        <div style="font-size:12px;color:var(--text-secondary)">Visit counts are tracked automatically when patients check in. Alerts appear here when anyone hits the threshold.</div>
+        <div class="card-header"><div class="card-title">Re-eval tracker</div></div>
+        <div style="font-size:12px;color:var(--text-secondary)">Visit counts are tracked automatically when patients check in. Set each patient's re-eval threshold on their card in the <b>Memberships → Active</b> tab. Alerts appear here when anyone is due.</div>
       </div>
       <div id="alertsContent">
         <div class="empty-state" style="padding:48px 20px">
@@ -732,19 +725,39 @@ function dbQueueToApp(r){return {id:r.id,name:r.name,time:r.time_label,status:r.
 function dbSettingsToApp(r){return {practiceName:r.practice_name,phone:r.phone,checkinUrl:r.checkin_url,overagePrice:r.overage_price,twilioSid:r.twilio_sid,twilioToken:r.twilio_token,twilioPhone:r.twilio_phone,janeSubdomain:r.jane_subdomain,janeKey:r.jane_key,appsScriptUrl:r.apps_script_url,quarterlyStats:r.quarterly_stats||{}};}
 
 // ── Load all data from Supabase on startup ─────────────────────────────
+let patientVisits=[]; // [{id, patientName, subscriptionId, totalVisits, visitsSinceReeval, reevalThreshold, lastReevalDate}]
+
+function dbVisitToApp(r){
+  return {
+    id:r.id,
+    patientName:r.patient_name,
+    subscriptionId:r.subscription_id,
+    totalVisits:r.total_visits||0,
+    visitsSinceReeval:r.visits_since_reeval||0,
+    reevalThreshold:r.reeval_threshold||15,
+    lastReevalDate:r.last_reeval_date||null
+  };
+}
+
+function getPatientVisit(name){
+  return patientVisits.find(v=>v.patientName.toLowerCase()===name.toLowerCase())||null;
+}
+
 async function loadAllData(){
   try{
-    const [plansR,subsR,passesR,queueR,settingsR]=await Promise.all([
+    const [plansR,subsR,passesR,queueR,settingsR,visitsR]=await Promise.all([
       sb.from('plans').select('*').order('id'),
       sb.from('subscriptions').select('*').order('id'),
       sb.from('punch_passes').select('*').order('id'),
       sb.from('queue').select('*').order('id'),
-      sb.from('settings').select('*').eq('id',1).single()
+      sb.from('settings').select('*').eq('id',1).single(),
+      sb.from('patient_visits').select('*')
     ]);
     plans=(plansR.data||[]).map(dbPlanToApp);
     subs=(subsR.data||[]).map(dbSubToApp);
     passes=(passesR.data||[]).map(dbPassToApp);
     queue=(queueR.data||[]).map(dbQueueToApp);
+    patientVisits=(visitsR.data||[]).map(dbVisitToApp);
     if(settingsR.data){
       const loaded=dbSettingsToApp(settingsR.data);
       Object.keys(loaded).forEach(k=>{ if(loaded[k]!==null && loaded[k]!==undefined) settings[k]=loaded[k]; });
@@ -1258,9 +1271,39 @@ function renderMemberships(){
         <div class="sub-group-body">
           <div class="sub-group-section">
             <div class="sub-section-label">Primary / account holder</div>
-            <span class="member-pill primary"><i class="ti ti-user" style="font-size:11px"></i>${s.primary||'—'}</span>
+            ${(()=>{
+              const pv=getPatientVisit(s.primary||s.groupName);
+              const total=pv?pv.totalVisits:0;
+              const since=pv?pv.visitsSinceReeval:0;
+              const thresh=pv?pv.reevalThreshold:15;
+              const due=since>=thresh&&total>0;
+              return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span class="member-pill primary"><i class="ti ti-user" style="font-size:11px"></i>${s.primary||'—'}</span>
+                ${total>0?`<span style="font-size:11px;color:var(--text-secondary)">${total} total · ${since}/${thresh} since re-eval</span>`:'<span style="font-size:11px;color:var(--text-hint)">no visits yet</span>'}
+                ${due?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#f5ddd8;color:#7a2e1e">🔔 Re-eval due</span><button class="sm-btn" style="font-size:10px;padding:3px 7px" onclick="markReevalDone('${(s.primary||s.groupName).replace(/'/g,"\\'")}')">Done</button>`:''}
+                <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+                  <span style="font-size:10px;color:var(--text-hint)">Re-eval at:</span>
+                  <input type="number" min="1" max="100" value="${thresh}" style="width:42px;border:0.5px solid var(--border-strong);border-radius:5px;padding:2px 4px;font-size:11px;text-align:center;background:var(--surface)" onchange="setReevalThreshold('${(s.primary||s.groupName).replace(/'/g,"\\'")}',this.value)"/>
+                </div>
+              </div>`;
+            })()}
           </div>
-          ${s.members&&s.members.length?`<div class="sub-group-section"><div class="sub-section-label">Members</div>${s.members.map(m=>`<span class="member-pill">${m}</span>`).join('')}</div>`:''}
+          ${s.members&&s.members.length?`<div class="sub-group-section"><div class="sub-section-label">Members</div>${s.members.map(m=>{
+            const pv=getPatientVisit(m);
+            const total=pv?pv.totalVisits:0;
+            const since=pv?pv.visitsSinceReeval:0;
+            const thresh=pv?pv.reevalThreshold:15;
+            const due=since>=thresh&&total>0;
+            return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px">
+              <span class="member-pill">${m}</span>
+              ${total>0?`<span style="font-size:11px;color:var(--text-secondary)">${total} total · ${since}/${thresh} since re-eval</span>`:'<span style="font-size:11px;color:var(--text-hint)">no visits yet</span>'}
+              ${due?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#f5ddd8;color:#7a2e1e">🔔 Re-eval due</span><button class="sm-btn" style="font-size:10px;padding:3px 7px" onclick="markReevalDone('${m.replace(/'/g,"\\'")}')">Done</button>`:''}
+              <div style="display:flex;align-items:center;gap:4px;margin-left:auto">
+                <span style="font-size:10px;color:var(--text-hint)">Re-eval at:</span>
+                <input type="number" min="1" max="100" value="${thresh}" style="width:42px;border:0.5px solid var(--border-strong);border-radius:5px;padding:2px 4px;font-size:11px;text-align:center;background:var(--surface)" onchange="setReevalThreshold('${m.replace(/'/g,"\\'")}',this.value)"/>
+              </div>
+            </div>`;
+          }).join('')}</div>`:''}
         </div>
       </div>`;
     }).join('');
@@ -1425,13 +1468,25 @@ function renderQueueItems(el,list){
     const plan=sub?plans.find(p=>p.id===sub.planId):null;
     const ci=plan?plans.indexOf(plan):5;
     const isDone=q.status==='done';
-    return `<div class="queue-item" style="${isDone?'opacity:0.5;background:#f0f4eb':''}">
+    const visit=getPatientVisit(q.name);
+    const totalVisits=visit?visit.totalVisits:0;
+    const sinceReeval=visit?visit.visitsSinceReeval:0;
+    const threshold=visit?visit.reevalThreshold:15;
+    const isDue=sinceReeval>=threshold&&totalVisits>0;
+    return `<div class="queue-item" style="${isDone?'opacity:0.5;background:#f0f4eb':''}${isDue?'border-color:#d4a090;':''}">
       <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PTXT[ci%PTXT.length]}">${(q.name||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
       <div class="q-info" style="flex:1">
-        <div class="q-name" style="${isDone?'text-decoration:line-through;color:var(--text-secondary)':''}">${q.name}</div>
-        <div class="q-detail">${plan?plan.name:'Walk-in'} · ${q.time}${q.visitCount?' · visit #'+q.visitCount+' this month':''}</div>
+        <div class="q-name" style="${isDone?'text-decoration:line-through;color:var(--text-secondary)':''}">
+          ${q.name}
+          ${isDue?`<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:#f5ddd8;color:#7a2e1e;margin-left:6px">🔔 Re-eval due</span>`:''}
+        </div>
+        <div class="q-detail">
+          ${plan?plan.name:'Walk-in'} · ${q.time}
+          ${totalVisits>0?`· <b>visit #${totalVisits}</b> total · ${sinceReeval}/${threshold} since re-eval`:''}
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
+        ${isDue&&!isDone?`<button class="sm-btn" style="font-size:10px;background:#f5ddd8;border-color:#d4a090;color:#7a2e1e;white-space:nowrap" onclick="markReevalDone('${q.name.replace(/'/g,"\\'")}')"><i class="ti ti-check" style="font-size:11px"></i> Re-eval</button>`:''}
         ${!isDone?`<button class="sm-btn" style="font-size:11px;background:#e8ece0;border-color:#c4c9b0;color:#3a3f28" onclick="markDone(${q.id})"><i class="ti ti-check" style="font-size:12px"></i> Done</button>`:'<span style="font-size:11px;color:var(--text-hint)">✓ Done</span>'}
       </div>
     </div>`;
@@ -1747,22 +1802,89 @@ function saveDismissed(data){
 }
 
 // Called automatically when a patient checks in (from kioskCheckIn and pollSheetQueue)
-function trackVisitForPatient(name){
+async function trackVisitForPatient(name){
   if(!name)return;
-  const key=name.trim().toLowerCase();
-  const counts=getVisitCounts();
-  counts[key]=(counts[key]||0)+1;
-  saveVisitCounts(counts);
-  const threshold=getReevalThreshold();
-  if(counts[key]%threshold===0){
-    // Clear any existing dismissal for this milestone so the alert reappears
-    const dismissed=getDismissed();
-    const milestoneKey=key+'_'+counts[key];
-    delete dismissed[milestoneKey];
-    saveDismissed(dismissed);
+  const cleanName=name.trim();
+  let visit=getPatientVisit(cleanName);
+  try{
+    if(visit){
+      const newTotal=visit.totalVisits+1;
+      const newSince=visit.visitsSinceReeval+1;
+      const{data,error}=await sb.from('patient_visits')
+        .update({total_visits:newTotal,visits_since_reeval:newSince,updated_at:new Date().toISOString()})
+        .eq('id',visit.id).select().single();
+      if(error)throw error;
+      Object.assign(visit,dbVisitToApp(data));
+    } else {
+      const sub=subs.find(s=>[s.primary,...(s.members||[])].some(m=>m&&m.toLowerCase()===cleanName.toLowerCase()));
+      const{data,error}=await sb.from('patient_visits')
+        .insert({patient_name:cleanName,subscription_id:sub?sub.id:null,total_visits:1,visits_since_reeval:1,reeval_threshold:15})
+        .select().single();
+      if(error)throw error;
+      visit=dbVisitToApp(data);
+      patientVisits.push(visit);
+    }
+    if(visit.visitsSinceReeval>=visit.reevalThreshold){
+      const dismissed=getDismissed();
+      delete dismissed[cleanName.toLowerCase()+'_'+visit.totalVisits];
+      saveDismissed(dismissed);
+    }
+    renderAlerts();
+  }catch(err){
+    console.log('Track visit error:',err);
+    const counts=getVisitCounts();
+    counts[cleanName.toLowerCase()]=(counts[cleanName.toLowerCase()]||0)+1;
+    saveVisitCounts(counts);
+    renderAlerts();
   }
-  renderAlerts();
 }
+
+async function markReevalDone(patientName){
+  const visit=getPatientVisit(patientName);
+  if(!visit)return;
+  try{
+    const today=new Date().toISOString().split('T')[0];
+    const{data,error}=await sb.from('patient_visits')
+      .update({visits_since_reeval:0,last_reeval_date:today,updated_at:new Date().toISOString()})
+      .eq('id',visit.id).select().single();
+    if(error)throw error;
+    Object.assign(visit,dbVisitToApp(data));
+    const dismissed=getDismissed();
+    Object.keys(dismissed).forEach(k=>{if(k.startsWith(patientName.toLowerCase()+'_'))delete dismissed[k];});
+    saveDismissed(dismissed);
+    renderAlerts();renderMemberships();
+    showToast(patientName+' re-eval recorded · visits since reset to 0');
+  }catch(err){console.log('Mark reeval error:',err);showToast('Could not update — try again');}
+}
+
+async function setReevalThreshold(patientName,threshold){
+  const visit=getPatientVisit(patientName);
+  const cleanThreshold=Math.max(1,parseInt(threshold)||15);
+  if(!visit){
+    // Create a visit record just to store the threshold
+    try{
+      const sub=subs.find(s=>[s.primary,...(s.members||[])].some(m=>m&&m.toLowerCase()===patientName.toLowerCase()));
+      const{data,error}=await sb.from('patient_visits')
+        .insert({patient_name:patientName,subscription_id:sub?sub.id:null,total_visits:0,visits_since_reeval:0,reeval_threshold:cleanThreshold})
+        .select().single();
+      if(error)throw error;
+      patientVisits.push(dbVisitToApp(data));
+      showToast('Re-eval threshold set to '+cleanThreshold+' for '+patientName);
+      renderMemberships();
+    }catch(err){console.log('Set threshold error (new):',err);}
+    return;
+  }
+  try{
+    const{data,error}=await sb.from('patient_visits')
+      .update({reeval_threshold:cleanThreshold,updated_at:new Date().toISOString()})
+      .eq('id',visit.id).select().single();
+    if(error)throw error;
+    Object.assign(visit,dbVisitToApp(data));
+    showToast('Re-eval threshold set to '+cleanThreshold+' for '+patientName);
+    renderAlerts();renderMemberships();
+  }catch(err){console.log('Set threshold error:',err);}
+}
+
 
 function dismissAlert(nameKey,milestone){
   const dismissed=getDismissed();
@@ -1779,77 +1901,71 @@ function clearDismissed(){
 }
 
 function renderAlerts(){
-  const threshold=getReevalThreshold();
-  const counts=getVisitCounts();
   const dismissed=getDismissed();
 
-  // Update threshold input
-  const inp=document.getElementById('reeval-threshold');
-  if(inp)inp.value=threshold;
-
-  // Build list of all known individual patients
-  // Sources: primary holders, dependents from active subs, punch pass holders
   const individuals=[];
-  subs.filter(s=>s.active&&!s.needsPlan).forEach(s=>{
-    if(s.primary)individuals.push({name:s.primary,plan:plans.find(p=>p.id===s.planId),group:s.groupName});
-    (s.members||[]).forEach(m=>{
-      if(m)individuals.push({name:m,plan:plans.find(p=>p.id===s.planId),group:s.groupName});
-    });
+  subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen).forEach(s=>{
+    const plan=plans.find(p=>p.id===s.planId);
+    if(s.primary)individuals.push({name:s.primary,plan,group:s.groupName});
+    (s.members||[]).forEach(m=>{if(m)individuals.push({name:m,plan,group:s.groupName});});
   });
   passes.filter(p=>p.active).forEach(p=>{
     if(p.primary||p.name)individuals.push({name:p.primary||p.name,plan:null,group:p.name+' (pass)'});
-    (p.members||[]).forEach(m=>{
-      if(m)individuals.push({name:m,plan:null,group:p.name+' (pass)'});
-    });
+    (p.members||[]).forEach(m=>{if(m)individuals.push({name:m,plan:null,group:p.name+' (pass)'});});
   });
 
-  // Categorise alerts
   const dueAlerts=[];
+  const upcomingAlerts=[];
+
   individuals.forEach(ind=>{
-    const key=ind.name.trim().toLowerCase();
-    const visits=counts[key]||0;
-    if(visits>0&&visits%threshold===0){
-      const milestoneKey=key+'_'+visits;
-      if(!dismissed[milestoneKey]){
-        dueAlerts.push({...ind,key,visits,milestone:visits});
-      }
+    const visit=getPatientVisit(ind.name);
+    const totalVisits=visit?visit.totalVisits:0;
+    const sinceReeval=visit?visit.visitsSinceReeval:0;
+    const threshold=visit?visit.reevalThreshold:15;
+    const lastReeval=visit?visit.lastReevalDate:null;
+    const isDue=sinceReeval>=threshold;
+    const alertKey=ind.name.toLowerCase()+'_'+totalVisits;
+    if(isDue&&!dismissed[alertKey]){
+      dueAlerts.push({...ind,visit,totalVisits,sinceReeval,threshold,lastReeval,alertKey});
+    } else if(threshold-sinceReeval<=3&&!isDue&&totalVisits>0){
+      upcomingAlerts.push({...ind,visit,totalVisits,sinceReeval,threshold,lastReeval});
     }
   });
 
-  // Update sidebar dot
   const alertDot=document.getElementById('alertDot');
   if(alertDot)alertDot.style.display=dueAlerts.length?'block':'none';
 
   const container=document.getElementById('alertsContent');
   if(!container)return;
 
-  if(!dueAlerts.length){
-    container.innerHTML=`<div class="empty-state" style="padding:48px 20px">
-      <i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>
-      No alerts right now — you're all caught up!
-    </div>`;
+  if(!dueAlerts.length&&!upcomingAlerts.length){
+    container.innerHTML='<div class="empty-state" style="padding:48px 20px"><i class="ti ti-bell-off" style="font-size:32px;display:block;margin-bottom:10px;color:var(--sage)"></i>No alerts right now — you\'re all caught up!</div>';
     return;
   }
 
-  container.innerHTML=`
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title">Re-eval due</div>
-        <span class="badge b-red">${dueAlerts.length} patient${dueAlerts.length!==1?'s':''}</span>
-      </div>
-      ${dueAlerts.map(a=>{
-        const initials=a.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-        const planName=a.plan?a.plan.name:'Punch pass';
-        return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:9px;background:#f5ddd8;border:0.5px solid #d4a090;margin-bottom:7px">
-          <div class="avatar" style="background:#f0e0d4;color:#5a2e12">${initials}</div>
-          <div style="flex:1">
-            <div style="font-size:13px;font-weight:500;color:var(--text-primary)">${a.name}</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${planName} · ${a.group} · ${a.visits} visits — re-eval due</div>
-          </div>
-          <button class="sm-btn primary" style="font-size:12px;white-space:nowrap" onclick="dismissAlert('${a.key}',${a.milestone})"><i class="ti ti-check" style="font-size:12px"></i> Done</button>
-        </div>`;
-      }).join('')}
-    </div>`;
+  let html='';
+
+  if(dueAlerts.length){
+    html+='<div class="card" style="margin-bottom:12px"><div class="card-header"><div class="card-title">Re-eval due</div><span class="badge" style="background:#f5ddd8;color:#7a2e1e">'+dueAlerts.length+' patient'+(dueAlerts.length!==1?'s':'')+'</span></div>';
+    html+=dueAlerts.map(function(a){
+      const initials=a.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      const lastDate=a.lastReeval?new Date(a.lastReeval).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'never';
+      return '<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:9px;background:#f5ddd8;border:0.5px solid #d4a090;margin-bottom:7px"><div class="avatar" style="background:#f0e0d4;color:#5a2e12">'+initials+'</div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+a.name+'</div><div style="font-size:12px;color:var(--text-secondary);">'+(a.plan?a.plan.name:'Punch pass')+' &middot; '+a.group+'</div><div style="font-size:11px;color:#7a2e1e;margin-top:2px;">&#128276; '+a.sinceReeval+' visits since last re-eval &middot; '+a.totalVisits+' total &middot; last re-eval: '+lastDate+'</div></div><button class="sm-btn primary" style="font-size:11px;white-space:nowrap" onclick="markReevalDone(\''+a.name.replace(/'/g,"\\'")+'\')" ><i class="ti ti-check" style="font-size:12px"></i> Re-eval done</button></div>';
+    }).join('');
+    html+='</div>';
+  }
+
+  if(upcomingAlerts.length){
+    html+='<div class="card"><div class="card-header"><div class="card-title">Coming up soon</div><span class="badge b-honey">'+upcomingAlerts.length+' patient'+(upcomingAlerts.length!==1?'s':'')+'</span></div>';
+    html+=upcomingAlerts.map(function(a){
+      const initials=a.name.split(' ').map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      const remaining=a.threshold-a.sinceReeval;
+      return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:9px;background:#fdf8f0;border:0.5px solid #e0c898;margin-bottom:7px"><div class="avatar" style="background:#f5e6cc;color:#6b3f0e">'+initials+'</div><div style="flex:1"><div style="font-size:13px;font-weight:500">'+a.name+'</div><div style="font-size:12px;color:var(--text-secondary);">'+a.sinceReeval+'/'+a.threshold+' visits</div></div><span style="font-size:11px;color:#6b3f0e;background:#f5e6cc;padding:3px 9px;border-radius:10px;white-space:nowrap">'+remaining+' visit'+(remaining!==1?'s':'')+' away</span></div>';
+    }).join('');
+    html+='</div>';
+  }
+
+  container.innerHTML=html;
 }
 // ── END RE-EVAL SYSTEM ─────────────────────────────────────────────────
 // ── QUARTERLY STATS ───────────────────────────────────────────────────
