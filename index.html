@@ -279,6 +279,16 @@ padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;margi
             </div>
           </div>
           <div style="font-size:11px;margin-top:5px" id="d-conv-prev"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;padding-top:8px;border-top:0.5px solid var(--border)">
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Prev NP total</div>
+              <input type="number" id="prev-np-total" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-hint);margin-bottom:3px;text-align:center">Prev signed up</div>
+              <input type="number" id="prev-np-converted" min="0" placeholder="0" style="width:100%;border:0.5px solid var(--border-strong);border-radius:6px;padding:5px 4px;font-size:13px;background:var(--surface);color:var(--text-primary);text-align:center;font-family:inherit" oninput="updateQuarterlyStats()"/>
+            </div>
+          </div>
         </div>
 
         <!-- R2C3: Net growth (quarter start vs now, manual quarter-start input) -->
@@ -1993,24 +2003,33 @@ function updateQuarterlyStats(){
   const currentLabel=getQuarterLabel(currentKey);
   const prevLabel=getQuarterLabel(prevKey);
 
-  // Read inputs
+  // Read current quarter inputs
   const npTotal=parseInt(document.getElementById('np-total')?.value)||0;
   const npConverted=Math.min(parseInt(document.getElementById('np-converted')?.value)||0,npTotal);
   const cancelled=parseInt(document.getElementById('attr-cancelled')?.value)||0;
   const quarterStartSubs=parseInt(document.getElementById('quarter-start-subs')?.value)||0;
 
-  // Save to Supabase (and localStorage as fast local cache)
+  // Read prev quarter manual inputs
+  const prevNpTotal=parseInt(document.getElementById('prev-np-total')?.value)||0;
+  const prevNpConverted=Math.min(parseInt(document.getElementById('prev-np-converted')?.value)||0,prevNpTotal);
+
+  // Build stored object — save both current and prev quarter data
   const stored=JSON.parse(localStorage.getItem('sp_qstats')||'{}');
   stored[currentKey]={npTotal,npConverted,cancelled,quarterStartSubs};
+  // Only overwrite prev if user actually entered something
+  if(prevNpTotal>0||prevNpConverted>0){
+    stored[prevKey]=Object.assign(stored[prevKey]||{},{npTotal:prevNpTotal,npConverted:prevNpConverted});
+  }
   localStorage.setItem('sp_qstats',JSON.stringify(stored));
-  // Async save to Supabase so it syncs across devices
-  sb.from('settings').update({quarterly_stats:stored}).eq('id',1).then(({error})=>{
-    if(error)console.log('Quarterly stats save error:',error);
+
+  // Save to Supabase
+  sb.from('settings').update({quarterly_stats:stored}).eq('id',1).then(function(res){
+    if(res.error)console.log('Quarterly stats save error:',res.error);
   });
 
   const prev=stored[prevKey]||null;
 
-  // ── Row 1 labels ──
+  // Row 1 labels
   const ql=document.getElementById('r1-quarter-label');
   const ql2=document.getElementById('r1-quarter-label2');
   if(ql)ql.textContent='· '+currentLabel;
@@ -2028,14 +2047,16 @@ function updateQuarterlyStats(){
   if(canDisp)canDisp.textContent=cancelled||'—';
   if(canSub)canSub.textContent=cancelled?cancelled+' this quarter':'enter below';
 
-  // ── Row 2 labels ──
+  // Row 2 labels
   const r2ql=document.getElementById('r2-quarter-label');
   const r2pl=document.getElementById('r2-prev-label');
   if(r2ql)r2ql.textContent='· '+currentLabel;
   if(r2pl)r2pl.textContent='· '+prevLabel;
 
-  // R2C2: Previous quarter NP conversion
-  const prevConvPct=prev&&prev.npTotal>0?Math.round(prev.npConverted/prev.npTotal*100):null;
+  // R2C2: Previous quarter NP conversion — use manual prev inputs if entered, otherwise fall back to stored prev quarter data
+  const effectivePrevTotal=prevNpTotal||((prev&&prev.npTotal)||0);
+  const effectivePrevConverted=prevNpConverted||((prev&&prev.npConverted)||0);
+  const prevConvPct=effectivePrevTotal>0?Math.round(effectivePrevConverted/effectivePrevTotal*100):null;
   const convEl=document.getElementById('d-conv');
   const convSub=document.getElementById('d-conv-sub');
   const convPrev=document.getElementById('d-conv-prev');
@@ -2044,28 +2065,24 @@ function updateQuarterlyStats(){
   const pct=prevConvPct!==null?prevConvPct:0;
   if(convEl)convEl.textContent=prevConvPct!==null?prevConvPct+'%':'—';
   if(convLabel)convLabel.textContent=pct+'%';
-  if(convSub)convSub.textContent=prev&&prev.npTotal?prev.npConverted+' of '+prev.npTotal+' NP on plan':'no data yet';
+  if(convSub)convSub.textContent=effectivePrevTotal?effectivePrevConverted+' of '+effectivePrevTotal+' NP signed up':'enter previous quarter numbers below';
   if(convArc)convArc.style.strokeDashoffset=125.7-(pct/100*125.7);
 
-  // Compare prev vs the quarter before that
-  const prevPrevDate=new Date();
-  prevPrevDate.setMonth(prevPrevDate.getMonth()-6);
-  const prevPrevKey=getQuarterKey(prevPrevDate);
-  const prevPrev=stored[prevPrevKey]||null;
-  const prevPrevPct=prevPrev&&prevPrev.npTotal>0?Math.round(prevPrev.npConverted/prevPrev.npTotal*100):null;
+  // Delta vs current quarter conversion
+  const currentConvPct=npTotal>0?Math.round(npConverted/npTotal*100):null;
   if(convPrev){
-    if(prevConvPct!==null&&prevPrevPct!==null){
-      const delta=prevConvPct-prevPrevPct;
+    if(prevConvPct!==null&&currentConvPct!==null){
+      const delta=currentConvPct-prevConvPct;
       const arrow=delta>0?'↑':delta<0?'↓':'→';
       const col=delta>0?'#5a7a3a':delta<0?'#a0402a':'var(--text-hint)';
-      convPrev.innerHTML=`<span style="color:${col}">${arrow} ${Math.abs(delta)}% vs ${getQuarterLabel(prevPrevKey)}</span>`;
+      convPrev.innerHTML='<span style="color:'+col+'">'+arrow+' '+Math.abs(delta)+'% vs this quarter ('+currentConvPct+'%)</span>';
     } else {
       convPrev.textContent='';
     }
   }
 
-  // R2C3: Net growth = current subs - quarter start subs
-  const currentTotalSubs=subs.filter(s=>s.active&&!s.needsPlan&&!s.frozen).length;
+  // R2C3: Net growth
+  const currentTotalSubs=subs.filter(function(s){return s.active&&!s.needsPlan&&!s.frozen;}).length;
   const netGrowth=quarterStartSubs>0?currentTotalSubs-quarterStartSubs:null;
   const ngEl=document.getElementById('d-net-growth');
   const ngSub=document.getElementById('d-net-growth-sub');
@@ -2085,35 +2102,49 @@ function updateQuarterlyStats(){
 
 async function loadQuarterlyStats(){
   const currentKey=getQuarterKey();
+  const prevKey=getPrevQuarterKey();
   let stored=JSON.parse(localStorage.getItem('sp_qstats')||'{}');
 
-  // Try to load from Supabase (source of truth across devices)
+  // Always try Supabase first — it's the source of truth
   try{
-    const{data,error}=await sb.from('settings').select('quarterly_stats').eq('id',1).single();
-    if(!error&&data&&data.quarterly_stats&&Object.keys(data.quarterly_stats).length){
-      stored=data.quarterly_stats;
-      localStorage.setItem('sp_qstats',JSON.stringify(stored));
+    const res=await sb.from('settings').select('quarterly_stats').eq('id',1).single();
+    if(!res.error&&res.data&&res.data.quarterly_stats){
+      const remote=res.data.quarterly_stats;
+      if(Object.keys(remote).length>0){
+        stored=remote;
+        localStorage.setItem('sp_qstats',JSON.stringify(stored));
+      }
     }
   }catch(e){console.log('Quarterly stats load error:',e);}
 
-  const currentData=stored[currentKey]||{};
-  const ids={
+  // Populate current quarter inputs
+  const cur=stored[currentKey]||{};
+  const inputMap={
     'np-total':'npTotal',
     'np-converted':'npConverted',
     'attr-cancelled':'cancelled',
     'quarter-start-subs':'quarterStartSubs'
   };
-  Object.entries(ids).forEach(([elId,key])=>{
-    const el=document.getElementById(elId);
-    if(el&&currentData[key]!==undefined&&currentData[key]!==null)el.value=currentData[key];
+  Object.entries(inputMap).forEach(function(pair){
+    const el=document.getElementById(pair[0]);
+    if(el&&cur[pair[1]]!==undefined&&cur[pair[1]]!==null)el.value=cur[pair[1]];
   });
+
+  // Populate previous quarter inputs
+  const prev=stored[prevKey]||{};
+  const prevTotalEl=document.getElementById('prev-np-total');
+  const prevConvEl=document.getElementById('prev-np-converted');
+  if(prevTotalEl&&prev.npTotal)prevTotalEl.value=prev.npTotal;
+  if(prevConvEl&&prev.npConverted)prevConvEl.value=prev.npConverted;
+
   updateQuarterlyStats();
 }
 
-// Legacy stubs — keep these so any old references don't crash
+// Legacy stubs
 function updateConversion(){updateQuarterlyStats();}
 function loadConversionInputs(){loadQuarterlyStats();}
 function updateAttrition(){updateQuarterlyStats();}
+function loadAttritionInputs(){}
 function loadAttritionInputs(){}
 
 // ── END QUARTERLY STATS ───────────────────────────────────────────────
