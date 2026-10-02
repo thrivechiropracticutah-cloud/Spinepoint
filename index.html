@@ -929,7 +929,7 @@ function renderPatients(){
   if(!items.length){list.innerHTML='<div class="empty"><i class="ti ti-users"></i><p>No patients in this category</p></div>';return;}
 
   // For active tab — group by household, then show solos
-  if(currentPatientTab==='active'&&!isPass){
+  if(currentPatientTab==='active'){
     // Build grouped HTML
     let html='';
     const rendered=new Set();
