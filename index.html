@@ -521,6 +521,39 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:system-
 <!-- Toast -->
 <div class="toast-wrap"><div class="toast" id="toast"><i class="ti ti-circle-check"></i><span id="toast-msg"></span></div></div>
 
+<!-- Household modal -->
+<div class="modal-overlay" id="household-modal" onclick="handleOverlay(event,'household-modal')">
+  <div class="modal">
+    <div class="modal-title" id="hh-modal-title">Create household</div>
+    <input type="hidden" id="hh-id"/>
+    <input type="hidden" id="hh-patient-id"/>
+    <label class="field-label">Household name</label>
+    <input type="text" class="field-input" id="hh-name" placeholder="Cooper Couple, Smith Family…"/>
+    <label class="field-label">Plan</label>
+    <select class="field-input" id="hh-plan" onchange="const p=plans.find(x=>x.id===+this.value);if(p)document.getElementById('hh-fee').value=p.price;"></select>
+    <label class="field-label">Monthly fee ($)</label>
+    <input type="number" class="field-input" id="hh-fee" placeholder="0"/>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('household-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveHousehold()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add to household modal -->
+<div class="modal-overlay" id="add-to-hh-modal" onclick="handleOverlay(event,'add-to-hh-modal')">
+  <div class="modal">
+    <div class="modal-title">Add to household</div>
+    <input type="hidden" id="add-hh-patient-id"/>
+    <label class="field-label">Select household</label>
+    <select class="field-input" id="add-hh-select"></select>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('add-to-hh-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmAddToHousehold()">Add</button>
+    </div>
+  </div>
+</div>
+
 <!-- QR print frame -->
 <iframe id="qr-frame" style="display:none"></iframe>
 
@@ -535,7 +568,7 @@ const APPS_URL='https://script.google.com/macros/s/AKfycby2AYBfOJKepGSY88s0vHV8O
 const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 
 // ══ STATE ══
-let plans=[], patients=[], passes=[], queue=[], patientVisits=[];
+let plans=[], patients=[], passes=[], queue=[], patientVisits=[], households=[];
 let settings={practiceName:'Thrive Chiropractic',checkinUrl:'',appsScriptUrl:APPS_URL};
 let currentPatientTab='active';
 let currentImportTab='new';
@@ -550,12 +583,14 @@ const PBGS=['#e8ece0','#f5e6cc','#dbeafe','#fce7f3','#d1fae5','#f5f0e8'];
 
 // ══ DB MAPPERS ══
 const dbPlan=r=>({id:r.id,name:r.name,price:Number(r.price)||0,reevalDefault:r.reeval_default||15});
+const dbHousehold=r=>({id:r.id,name:r.name,planId:r.plan_id,fee:Number(r.fee)||0});
 const dbPatient=r=>({
   id:r.id, name:r.group_name, planId:r.plan_id, fee:Number(r.fee)||0,
   primary:r.primary_holder, phone:r.phone,
   members:r.members||[], memberPhones:r.member_phones||[],
   since:r.since, active:r.active, frozen:r.frozen||false,
-  needsSort:r.needs_plan||false, reevalThreshold:r.reeval_threshold||15
+  needsSort:r.needs_plan||false, reevalThreshold:r.reeval_threshold||15,
+  householdId:r.household_id||null
 });
 const dbPass=r=>({
   id:r.id, name:r.name, phone:r.phone,
@@ -573,19 +608,21 @@ const dbSettings=r=>({
 // ══ LOAD ALL DATA ══
 async function loadAll(){
   try{
-    const[plR,ptR,paR,qR,sR,vR]=await Promise.all([
+    const[plR,ptR,paR,qR,sR,vR,hhR]=await Promise.all([
       sb.from('plans').select('*').order('id'),
       sb.from('subscriptions').select('*').order('id'),
       sb.from('punch_passes').select('*').order('id'),
       sb.from('queue').select('*').order('id'),
       sb.from('settings').select('*').eq('id',1).single(),
-      sb.from('patient_visits').select('*')
+      sb.from('patient_visits').select('*'),
+      sb.from('households').select('*').order('name')
     ]);
     plans=(plR.data||[]).map(dbPlan);
     patients=(ptR.data||[]).map(dbPatient);
     passes=(paR.data||[]).map(dbPass);
     queue=(qR.data||[]).map(dbQueue);
     patientVisits=(vR.data||[]).map(dbVisit);
+    households=(hhR.data||[]).map(dbHousehold);
     if(sR.data){const s=dbSettings(sR.data);Object.keys(s).forEach(k=>{if(s[k]!==null&&s[k]!==undefined)settings[k]=s[k];});}
     await loadQuarterlyStats();
   }catch(e){console.log('Load error:',e);toast('Could not connect to database');}
@@ -609,16 +646,25 @@ function nav(id,el){
 // ══ DASHBOARD ══
 function renderDashboard(){
   const activePts=patients.filter(p=>p.active&&!p.frozen&&!p.needsSort);
-  const totalMembers=activePts.reduce((a,p)=>a+1+(p.members||[]).length,0);
-  const totalMRR=activePts.reduce((a,p)=>a+p.fee,0);
+  // Solo patients (not in a household) each count as one billing unit
+  const soloPatients=activePts.filter(p=>!p.householdId);
+  // Households with at least one active member count as one billing unit each
+  const activeHHIds=new Set(activePts.filter(p=>p.householdId).map(p=>p.householdId));
+  const activeHouseholds=households.filter(h=>activeHHIds.has(h.id));
+  const totalBillingUnits=soloPatients.length+activeHouseholds.length;
+  const soloMRR=soloPatients.reduce((a,p)=>a+p.fee,0);
+  const hhMRR=activeHouseholds.reduce((a,h)=>a+h.fee,0);
+  const totalMRR=soloMRR+hhMRR;
+  // Total individuals = all active patients regardless of grouping
+  const totalMembers=activePts.reduce((a,p)=>a+1,0);
   const activePasses=passes.filter(p=>p.active);
   const avg=totalMembers>0?Math.round(totalMRR/totalMembers):0;
 
   // Row 1
   document.getElementById('d-mrr').textContent='$'+totalMRR.toLocaleString();
-  document.getElementById('d-mrr-sub').textContent=activePts.length+' active subscription'+(activePts.length!==1?'s':'');
+  document.getElementById('d-mrr-sub').textContent=totalBillingUnits+' billing unit'+(totalBillingUnits!==1?'s':'')+(activeHouseholds.length?' · '+activeHouseholds.length+' household'+(activeHouseholds.length!==1?'s':''):'');
   document.getElementById('d-members').textContent=totalMembers;
-  document.getElementById('d-members-sub').textContent=activePts.length+' household'+(activePts.length!==1?'s':'');
+  document.getElementById('d-members-sub').textContent=totalBillingUnits+' subscription'+(totalBillingUnits!==1?'s':', ')+( activeHouseholds.length?activeHouseholds.length+' household'+(activeHouseholds.length!==1?'s':''):'all solo');
   document.getElementById('d-passes').textContent=activePasses.length;
   const lowPasses=activePasses.filter(p=>p.visits<=2).length;
   document.getElementById('d-passes-sub').textContent=lowPasses?lowPasses+' running low':'all passes healthy';
@@ -633,15 +679,21 @@ function renderDashboard(){
   const breakdown=document.getElementById('plan-breakdown');
   if(!plans.length){breakdown.innerHTML='<div class="empty"><p>Add plans in Settings to see breakdown</p></div>';return;}
   breakdown.innerHTML=plans.map((p,i)=>{
-    const planPts=activePts.filter(pt=>pt.planId===p.id);
-    const count=planPts.reduce((a,pt)=>a+1+(pt.members||[]).length,0);
-    const mrr=planPts.reduce((a,pt)=>a+pt.fee,0);
+    // Solo patients on this plan
+    const planSolo=soloPatients.filter(pt=>pt.planId===p.id);
+    // Households on this plan
+    const planHH=activeHouseholds.filter(h=>h.planId===p.id);
+    // Members of households on this plan
+    const planHHMembers=activePts.filter(pt=>pt.householdId&&households.find(h=>h.id===pt.householdId&&h.planId===p.id));
+    const count=planSolo.length+planHHMembers.length;
+    const mrr=planSolo.reduce((a,pt)=>a+pt.fee,0)+planHH.reduce((a,h)=>a+h.fee,0);
+    const billingUnits=planSolo.length+planHH.length;
     const pct=totalMembers>0?Math.round(count/totalMembers*100):0;
     return `<div class="plan-row">
       <div class="plan-dot" style="background:${PCOLS[i%PCOLS.length]}"></div>
       <div class="plan-name">${p.name}</div>
       <div style="flex:1;padding:0 12px"><div class="plan-bar-bg"><div class="plan-bar-fill" style="width:${pct}%;background:${PCOLS[i%PCOLS.length]}"></div></div></div>
-      <div class="plan-count">${count} <span style="font-size:11px;color:var(--text-secondary)">members</span></div>
+      <div class="plan-count">${billingUnits} <span style="font-size:11px;color:var(--text-secondary)">${count!==billingUnits?'units · '+count+' members':'unit'+(billingUnits!==1?'s':'')}</span></div>
       <div class="plan-mrr">$${mrr.toLocaleString()}/mo</div>
     </div>`;
   }).join('')+`<div class="plan-row">
@@ -876,6 +928,62 @@ function renderPatients(){
   const list=document.getElementById('patient-list');
   if(!items.length){list.innerHTML='<div class="empty"><i class="ti ti-users"></i><p>No patients in this category</p></div>';return;}
 
+  // For active tab — group by household, then show solos
+  if(currentPatientTab==='active'&&!isPass){
+    // Build grouped HTML
+    let html='';
+    const rendered=new Set();
+
+    // Households first
+    households.forEach(hh=>{
+      const members=items.filter(p=>p.householdId===hh.id);
+      if(!members.length)return;
+      const hhPlan=plans.find(x=>x.id===hh.planId);
+      const ci=hhPlan?plans.indexOf(hhPlan):5;
+      html+=`<div style="border:0.5px solid ${PBGS[ci%PBGS.length]};border-radius:10px;margin-bottom:10px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:${PBGS[ci%PBGS.length]}">
+          <i class="ti ti-home" style="color:${PCOLS[ci%PCOLS.length]};font-size:16px"></i>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:${PCOLS[ci%PCOLS.length]}">${hh.name}</div>
+            <div style="font-size:11px;color:${PCOLS[ci%PCOLS.length]};opacity:.75">${hhPlan?hhPlan.name:'No plan'} · $${hh.fee}/mo · ${members.length} member${members.length!==1?'s':''}</div>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="openHouseholdModal(${hh.id})"><i class="ti ti-edit" style="font-size:11px"></i> Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="dissolveHousehold(${hh.id})"><i class="ti ti-users-minus" style="font-size:11px"></i> Dissolve</button>
+        </div>
+        ${members.map(p=>{
+          rendered.add(p.id);
+          const v=patientVisits.find(x=>x.patientName.toLowerCase()===(p.name||'').toLowerCase());
+          const isDue=v&&v.sinceReeval>=v.threshold&&v.total>0;
+          const isClose=v&&!isDue&&v.threshold-v.sinceReeval<=3&&v.total>0;
+          const vpBg=isDue?'#fee2e2':isClose?'#fef3c7':'#e8ece0';
+          const vpCol=isDue?'var(--red)':isClose?'var(--amber)':'var(--green)';
+          const vPill=v&&v.total>0?`<span class="visit-pill" style="background:${vpBg};color:${vpCol}">${v.sinceReeval}/${v.threshold}</span>`:'';
+          return `<div class="patient-row" style="padding-left:20px;border-radius:0">
+            <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PCOLS[ci%PCOLS.length]}">${(p.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>
+            <div class="patient-info">
+              <div class="patient-name">${p.name||'Unknown'}</div>
+              <div class="patient-detail">${p.phone||'no phone'}${p.since?' · since '+new Date(p.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):''}</div>
+            </div>
+            <div class="patient-actions">
+              ${vPill}
+              <button class="btn btn-secondary btn-sm" onclick="removeFromHousehold(${p.id})"><i class="ti ti-logout" style="font-size:11px"></i></button>
+              <button class="menu-btn" onclick="openCtx(${p.id},null,event)"><i class="ti ti-dots-vertical"></i></button>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    });
+
+    // Solo patients (not in any household)
+    const soloItems=items.filter(p=>!p.householdId&&!rendered.has(p.id));
+    if(soloItems.length){
+      html+=soloItems.map(p=>renderPatientRow(p)).join('');
+    }
+
+    list.innerHTML=html||'<div class="empty"><i class="ti ti-users"></i><p>No active patients</p></div>';
+    return;
+  }
+
   list.innerHTML=items.map((p,idx)=>{
     const isPass=p._isPass;
     const name=p.name||p.primary||'Unknown';
@@ -886,8 +994,11 @@ function renderPatients(){
 
     // Visit info for primary
     const v=!isPass?patientVisits.find(x=>x.patientName.toLowerCase()===(p.primary||name).toLowerCase()):null;
-    const visitBadge=v?`<span class="visit-pill" style="background:${v.sinceReeval>=v.threshold?'#fee2e2':v.threshold-v.sinceReeval<=3?'#fef3c7':'#e8ece0'};color:${v.sinceReeval>=v.threshold?'var(--red)':v.threshold-v.sinceReeval<=3?'var(--amber)':'var(--green)'}">${v.sinceReeval}/${v.threshold}</span>`:'';
-
+    const isDue=v&&v.sinceReeval>=v.threshold&&v.total>0;
+    const isClose=v&&!isDue&&v.threshold-v.sinceReeval<=3&&v.total>0;
+    const vpBg=isDue?'#fee2e2':isClose?'#fef3c7':'#e8ece0';
+    const vpCol=isDue?'var(--red)':isClose?'var(--amber)':'var(--green)';
+    const visitPill=v&&v.total>0?`<span class="visit-pill" style="background:${vpBg};color:${vpCol}">${v.sinceReeval}/${v.threshold}</span>`:'';
     // Status badge
     let statusBadge='';
     if(isPass) statusBadge=`<span class="badge badge-amber">${p.visits} visits left</span>`;
@@ -898,11 +1009,12 @@ function renderPatients(){
     return `<div class="patient-row">
       <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PCOLS[ci%PCOLS.length]}">${initials}</div>
       <div class="patient-info">
-        <div class="patient-name">${allNames.join(', ')}${visitBadge?'&nbsp;'+visitBadge:''}</div>
-        <div class="patient-detail">${p.phone||'no phone'}${plan?' · $'+p.fee+'/mo':''}${isPass?'':''}${p.since?' · since '+new Date(p.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):''}</div>
+        <div class="patient-name">${allNames.join(', ')}</div>
+        <div class="patient-detail">${p.phone||'no phone'}${plan?' · $'+p.fee+'/mo':''}${p.since?' · since '+new Date(p.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):''}</div>
       </div>
       <div class="patient-actions">
         ${statusBadge}
+        ${currentPatientTab==='active'&&visitPill?visitPill:''}
         ${currentPatientTab==='unsorted'?`
           <button class="btn btn-secondary btn-sm" onclick="sortPatient(${p.id},'active')">Active</button>
           <button class="btn btn-secondary btn-sm" onclick="openPassFromUnsorted(${p.id})">Punch</button>
@@ -932,6 +1044,14 @@ function openCtx(patientId,passId,e){
     if(p.active||p.frozen) html+=`<div class="dropdown-item" onclick="setPatientStatus(${patientId},'inactive')"><i class="ti ti-user-off"></i> Move to Inactive</div>`;
     if(!p.active) html+=`<div class="dropdown-item" onclick="setPatientStatus(${patientId},'active')"><i class="ti ti-rotate"></i> Reactivate</div>`;
     html+=`<div class="dropdown-item" onclick="convertToPass(${patientId})"><i class="ti ti-ticket"></i> Convert to Punch pass</div>`;
+    // Household options
+    html+=`<div class="dropdown-divider"></div>`;
+    if(p.householdId){
+      html+=`<div class="dropdown-item" onclick="removeFromHousehold(${patientId})"><i class="ti ti-logout"></i> Remove from household</div>`;
+    } else {
+      if(households.length) html+=`<div class="dropdown-item" onclick="openAddToHousehold(${patientId})"><i class="ti ti-home-plus"></i> Add to household</div>`;
+      html+=`<div class="dropdown-item" onclick="openCreateHousehold(${patientId})"><i class="ti ti-home"></i> Create new household</div>`;
+    }
     html+=`<div class="dropdown-divider"></div>`;
     html+=`<div class="dropdown-item danger" onclick="deletePatient(${patientId})"><i class="ti ti-trash"></i> Delete</div>`;
   } else if(passId){
@@ -1624,6 +1744,160 @@ function toast(msg){
 }
 
 // ══ INIT ══
+// ── HOUSEHOLD FUNCTIONS ───────────────────────────────────────────────
+
+function renderPatientRow(p){
+  const isPass=p._isPass;
+  const name=p.name||p.primary||'Unknown';
+  const plan=isPass?null:plans.find(x=>x.id===p.planId);
+  const ci=plan?plans.indexOf(plan):5;
+  const initials=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const v=!isPass?patientVisits.find(x=>x.patientName.toLowerCase()===name.toLowerCase()):null;
+  const isDue=v&&v.sinceReeval>=v.threshold&&v.total>0;
+  const isClose=v&&!isDue&&v.threshold-v.sinceReeval<=3&&v.total>0;
+  const vpBg=isDue?'#fee2e2':isClose?'#fef3c7':'#e8ece0';
+  const vpCol=isDue?'var(--red)':isClose?'var(--amber)':'var(--green)';
+  const visitPill=v&&v.total>0?`<span class="visit-pill" style="background:${vpBg};color:${vpCol}">${v.sinceReeval}/${v.threshold}</span>`:'';
+  let statusBadge='';
+  if(isPass) statusBadge=`<span class="badge badge-amber">${p.visits} visits left</span>`;
+  else if(p.frozen) statusBadge='<span class="badge badge-blue">❄ Frozen</span>';
+  else if(p.needsSort) statusBadge='<span class="badge badge-gray">Unsorted</span>';
+  else if(plan) statusBadge=`<span class="badge" style="background:${PBGS[ci%PBGS.length]};color:${PCOLS[ci%PCOLS.length]}">${plan.name}</span>`;
+  return `<div class="patient-row">
+    <div class="avatar" style="background:${PBGS[ci%PBGS.length]};color:${PCOLS[ci%PCOLS.length]}">${initials}</div>
+    <div class="patient-info">
+      <div class="patient-name">${name}</div>
+      <div class="patient-detail">${p.phone||'no phone'}${plan?' · $'+p.fee+'/mo':''}${p.since?' · since '+new Date(p.since).toLocaleDateString('en-US',{month:'short',year:'numeric'}):''}</div>
+    </div>
+    <div class="patient-actions">
+      ${statusBadge}
+      ${currentPatientTab==='active'&&visitPill?visitPill:''}
+      ${currentPatientTab==='unsorted'?`
+        <button class="btn btn-secondary btn-sm" onclick="sortPatient(${p.id},'active')">Active</button>
+        <button class="btn btn-secondary btn-sm" onclick="openPassFromUnsorted(${p.id})">Punch</button>
+        <button class="btn btn-secondary btn-sm" onclick="sortPatient(${p.id},'inactive')">Inactive</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePatient(${p.id})"><i class="ti ti-x"></i></button>
+      `:`<button class="menu-btn" onclick="openCtx(${isPass?'null':p.id},${isPass?p.id:'null'},event)"><i class="ti ti-dots-vertical"></i></button>`}
+    </div>
+  </div>`;
+}
+
+function openCreateHousehold(patientId){
+  closeCtx();
+  document.getElementById('hh-id').value='';
+  document.getElementById('hh-patient-id').value=patientId||'';
+  document.getElementById('hh-modal-title').textContent='Create household';
+  document.getElementById('hh-name').value='';
+  document.getElementById('hh-fee').value='';
+  const sel=document.getElementById('hh-plan');
+  sel.innerHTML='<option value="">— no plan —</option>'+plans.map(p=>`<option value="${p.id}">${p.name} — $${p.price}/mo</option>`).join('');
+  document.getElementById('household-modal').classList.add('open');
+}
+
+function openHouseholdModal(hhId){
+  closeCtx();
+  const hh=households.find(x=>x.id===hhId);
+  if(!hh)return;
+  document.getElementById('hh-id').value=hhId;
+  document.getElementById('hh-patient-id').value='';
+  document.getElementById('hh-modal-title').textContent='Edit household';
+  document.getElementById('hh-name').value=hh.name;
+  document.getElementById('hh-fee').value=hh.fee;
+  const sel=document.getElementById('hh-plan');
+  sel.innerHTML='<option value="">— no plan —</option>'+plans.map(p=>`<option value="${p.id}"${p.id===hh.planId?' selected':''}>${p.name} — $${p.price}/mo</option>`).join('');
+  document.getElementById('household-modal').classList.add('open');
+}
+
+async function saveHousehold(){
+  const id=document.getElementById('hh-id').value;
+  const patientId=document.getElementById('hh-patient-id').value;
+  const name=document.getElementById('hh-name').value.trim();
+  if(!name){toast('Please enter a household name');return;}
+  const planId=parseInt(document.getElementById('hh-plan').value)||null;
+  const fee=parseFloat(document.getElementById('hh-fee').value)||0;
+  const row={name,plan_id:planId,fee};
+  try{
+    let hhId;
+    if(id){
+      const{data,error}=await sb.from('households').update(row).eq('id',+id).select().single();
+      if(error)throw error;
+      const idx=households.findIndex(x=>x.id===+id);
+      if(idx>=0)households[idx]=dbHousehold(data);
+      hhId=+id;
+      toast(name+' updated');
+    } else {
+      const{data,error}=await sb.from('households').insert(row).select().single();
+      if(error)throw error;
+      households.push(dbHousehold(data));
+      hhId=data.id;
+      toast(name+' created');
+    }
+    // If creating from a patient, add that patient to the household
+    if(patientId){
+      const{error}=await sb.from('subscriptions').update({household_id:hhId}).eq('id',+patientId);
+      if(error)throw error;
+      const p=patients.find(x=>x.id===+patientId);
+      if(p)p.householdId=hhId;
+    }
+    closeModal('household-modal');
+    renderPatients();renderDashboard();
+  }catch(e){console.log(e);toast('Could not save household');}
+}
+
+function openAddToHousehold(patientId){
+  closeCtx();
+  document.getElementById('add-hh-patient-id').value=patientId;
+  const sel=document.getElementById('add-hh-select');
+  sel.innerHTML=households.map(h=>`<option value="${h.id}">${h.name}</option>`).join('');
+  document.getElementById('add-to-hh-modal').classList.add('open');
+}
+
+async function confirmAddToHousehold(){
+  const patientId=+document.getElementById('add-hh-patient-id').value;
+  const hhId=+document.getElementById('add-hh-select').value;
+  if(!patientId||!hhId)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({household_id:hhId}).eq('id',patientId);
+    if(error)throw error;
+    const p=patients.find(x=>x.id===patientId);
+    if(p)p.householdId=hhId;
+    closeModal('add-to-hh-modal');
+    renderPatients();renderDashboard();
+    toast((p?.name||'Patient')+' added to household');
+  }catch(e){toast('Could not add to household');}
+}
+
+async function removeFromHousehold(patientId){
+  closeCtx();
+  const p=patients.find(x=>x.id===patientId);
+  if(!p)return;
+  try{
+    const{error}=await sb.from('subscriptions').update({household_id:null}).eq('id',patientId);
+    if(error)throw error;
+    p.householdId=null;
+    renderPatients();renderDashboard();
+    toast((p.name||'Patient')+' removed from household');
+  }catch(e){toast('Could not remove from household');}
+}
+
+async function dissolveHousehold(hhId){
+  closeCtx();
+  const hh=households.find(x=>x.id===hhId);
+  if(!hh||!confirm('Dissolve "'+hh.name+'"? All members will become individual patients. Their visit history stays intact.'))return;
+  try{
+    // Remove household_id from all members
+    const{error}=await sb.from('subscriptions').update({household_id:null}).eq('household_id',hhId);
+    if(error)throw error;
+    patients.forEach(p=>{if(p.householdId===hhId)p.householdId=null;});
+    // Delete the household
+    await sb.from('households').delete().eq('id',hhId);
+    households=households.filter(x=>x.id!==hhId);
+    renderPatients();renderDashboard();
+    toast(hh.name+' dissolved — members are now individual patients');
+  }catch(e){console.log(e);toast('Could not dissolve household');}
+}
+// ── END HOUSEHOLD FUNCTIONS ───────────────────────────────────────────
+
 window.onload=async function(){
   document.getElementById('dash-date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
   await loadAll();
