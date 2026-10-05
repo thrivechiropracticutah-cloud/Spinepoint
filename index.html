@@ -453,23 +453,35 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:system-
   <div class="modal">
     <div class="modal-title" id="patient-modal-title">Add patient</div>
     <input type="hidden" id="pm-id"/>
-    <input type="hidden" id="pm-type" value="active"/>
+    <input type="hidden" id="pm-id-existing"/>
+    <label class="field-label">Type</label>
+    <select class="field-input" id="pm-type" onchange="updatePatientModalType()">
+      <option value="active">Active subscription</option>
+      <option value="punch">Punch pass</option>
+      <option value="unsorted">Unsorted (sort later)</option>
+    </select>
     <label class="field-label">Full name</label>
     <input type="text" class="field-input" id="pm-name" placeholder="John Smith"/>
     <label class="field-label">Phone number</label>
     <input type="text" class="field-input" id="pm-phone" placeholder="8015551234"/>
-    <label class="field-label">Plan</label>
-    <select class="field-input" id="pm-plan"></select>
-    <label class="field-label">Monthly fee ($)</label>
-    <input type="number" class="field-input" id="pm-fee" placeholder="0"/>
-    <label class="field-label">Member since</label>
+    <div id="pm-sub-fields">
+      <label class="field-label">Plan</label>
+      <select class="field-input" id="pm-plan"></select>
+      <label class="field-label">Monthly fee ($)</label>
+      <input type="number" class="field-input" id="pm-fee" placeholder="0"/>
+      <label class="field-label">Re-eval every (visits)</label>
+      <input type="number" class="field-input" id="pm-reeval" placeholder="15" value="15"/>
+      <label class="field-label">Additional members <span style="font-weight:400;color:var(--text-hint)">— one per line</span></label>
+      <textarea class="field-input" id="pm-members" rows="3" placeholder="Sarah Smith&#10;Tommy Smith"></textarea>
+      <label class="field-label">Member phones <span style="font-weight:400;color:var(--text-hint)">— same order as members above</span></label>
+      <textarea class="field-input" id="pm-member-phones" rows="3" placeholder="8015552345&#10;8015553456"></textarea>
+    </div>
+    <div id="pm-punch-fields" style="display:none">
+      <label class="field-label">Visits remaining</label>
+      <input type="number" class="field-input" id="pm-punch-visits" value="12"/>
+    </div>
+    <label class="field-label">Member since / purchase date</label>
     <input type="date" class="field-input" id="pm-since"/>
-    <label class="field-label">Re-eval every (visits)</label>
-    <input type="number" class="field-input" id="pm-reeval" placeholder="15" value="15"/>
-    <label class="field-label">Additional members <span style="font-weight:400;color:var(--text-hint)">— one per line</span></label>
-    <textarea class="field-input" id="pm-members" rows="3" placeholder="Sarah Smith&#10;Tommy Smith"></textarea>
-    <label class="field-label">Member phones <span style="font-weight:400;color:var(--text-hint)">— same order as members above</span></label>
-    <textarea class="field-input" id="pm-member-phones" rows="3" placeholder="8015552345&#10;8015553456"></textarea>
     <div class="modal-actions">
       <button class="btn btn-secondary" onclick="closeModal('patient-modal')">Cancel</button>
       <button class="btn btn-primary" onclick="savePatient()">Save</button>
@@ -1072,10 +1084,26 @@ document.addEventListener('click',closeCtx);
 document.addEventListener('scroll',closeCtx,true);
 
 // ══ PATIENT CRUD ══
+function updatePatientModalType(){
+  const type=document.getElementById('pm-type').value;
+  const subFields=document.getElementById('pm-sub-fields');
+  const punchFields=document.getElementById('pm-punch-fields');
+  if(subFields)subFields.style.display=type==='punch'?'none':'block';
+  if(punchFields)punchFields.style.display=type==='punch'?'block':'none';
+}
+
 function openPatientModal(id){
   const p=id?patients.find(x=>x.id===id):null;
   document.getElementById('pm-id').value=id||'';
   document.getElementById('patient-modal-title').textContent=p?'Edit patient':'Add patient';
+  // Set type based on current tab when adding new
+  if(!p){
+    const typeMap={active:'active',punch:'punch',unsorted:'unsorted',frozen:'active',inactive:'active'};
+    document.getElementById('pm-type').value=typeMap[currentPatientTab]||'active';
+  } else {
+    document.getElementById('pm-type').value='active';
+  }
+  updatePatientModalType();
   document.getElementById('pm-name').value=p?p.name:'';
   document.getElementById('pm-phone').value=p?p.phone||'':'';
   document.getElementById('pm-fee').value=p?p.fee:'';
@@ -1094,14 +1122,34 @@ async function savePatient(){
   const id=document.getElementById('pm-id').value;
   const name=document.getElementById('pm-name').value.trim();
   if(!name){toast('Please enter a name');return;}
-  const planId=parseInt(document.getElementById('pm-plan').value)||null;
-  const fee=parseFloat(document.getElementById('pm-fee').value)||0;
+  const type=document.getElementById('pm-type').value;
   const phone=document.getElementById('pm-phone').value.trim();
   const since=document.getElementById('pm-since').value||null;
+
+  // If punch pass type — create a pass instead
+  if(type==='punch'&&!id){
+    const visits=parseInt(document.getElementById('pm-punch-visits').value)||12;
+    try{
+      const{data,error}=await sb.from('punch_passes').insert({name,phone,visits,purchase_date:toSafeDate(since),active:true}).select().single();
+      if(error)throw error;
+      passes.push(dbPass(data));
+      closeModal('patient-modal');
+      currentPatientTab='punch';
+      document.querySelectorAll('.tab[id^="ptab-"]').forEach(t=>t.classList.remove('active'));
+      document.getElementById('ptab-punch').classList.add('active');
+      renderPatients();renderDashboard();renderAlerts();
+      toast(name+' added as punch pass');
+    }catch(e){console.log(e);toast('Could not save pass');}
+    return;
+  }
+
+  const planId=parseInt(document.getElementById('pm-plan').value)||null;
+  const fee=parseFloat(document.getElementById('pm-fee').value)||0;
   const reeval=parseInt(document.getElementById('pm-reeval').value)||15;
   const members=document.getElementById('pm-members').value.split('\n').map(m=>m.trim()).filter(Boolean);
   const memberPhones=document.getElementById('pm-member-phones').value.split('\n').map(p=>p.trim()).filter(Boolean);
-  const row={group_name:name,plan_id:planId,fee,primary_holder:name,phone,members,member_phones:memberPhones,since,active:true,frozen:false,needs_plan:false,reeval_threshold:reeval};
+  const needsSort=type==='unsorted';
+  const row={group_name:name,plan_id:planId,fee,primary_holder:name,phone,members,member_phones:memberPhones,since:toSafeDate(since),active:true,frozen:false,needs_plan:needsSort,reeval_threshold:reeval};
   try{
     if(id){
       const{data,error}=await sb.from('subscriptions').update(row).eq('id',+id).select().single();
